@@ -10,8 +10,12 @@
   "scripts": {
     "gallery": "node --import tsx src/gallery.ts",
     "albums": "node albums/build.mjs",
-    "test": "vitest run",
-    "lint": "tsc --noEmit"
+    "test": "node --test tools/beach.check.mjs && vitest run",
+    "lint": "tsc --noEmit",
+    "publish": "node --import tsx src/push.ts",
+    "status": "node --import tsx src/status.ts",
+    "cast": "node --import tsx src/cast.ts",
+    "study": "node tools/splash-study.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

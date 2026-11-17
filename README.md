@@ -1,11 +1,16 @@
 # Uma Art Authoring
 
-The local gallery and album builders for reviewing Uma character and enemy art. The gallery listens on loopback on port 4323.
+Run `pnpm install` and `pnpm gallery` for the [Local Art Gallery](http://127.0.0.1:4323).
+`pnpm albums --check` compares generated pages with the saved albums. `pnpm albums` rebuilds the albums in place.
 
-Clone this repo alongside `uma-platform`, then run `pnpm install` and `pnpm gallery`. Open [Local Art Gallery](http://127.0.0.1:4323). `pnpm albums --check` compares the album builders with the current local pages in memory. `pnpm albums` regenerates the pages in their existing private authoring directory.
+Private work lives in `content/authoring/`, including `character-universes/` and `splash-art/`.
+Set `UMA_ART_CONTENT` for an alternate private directory or `UNIVERSES_DIR` for a universe collection directory.
+The Ranker stays in the sibling `uma-platform` checkout. Set `UMA_PLATFORM_ROOT` or `RANKER_DIR` to use it elsewhere.
 
-The default directory is the sibling checkout's `content/authoring/character-universes`. Set `UMA_PLATFORM_ROOT` for another platform checkout, `UMA_CONTENT_DIR` for another private content root, or `UNIVERSES_DIR` for the authoring directory itself. `PORT` overrides the gallery port.
+Run `pnpm cast cyberpunk --dry-run` to preview a cast-folder sync.
+On the owner's publishing instruction, run `pnpm publish <universe> [--enemies | --portraits] [--only <ids>]`.
+`--dry-run` plans a publish using existing bucket metadata. The publisher uses the existing scoped Google Cloud CLI configuration and bucket.
+Farm Life publishing runs the Platform master-data release command using this repo's local publication mirror.
+`pnpm status` refreshes the publication records without uploading art.
 
-This repo tracks source code and synthetic tests. Keep all authored images, references, manifests, generated pages and review data in their existing private directories. The gallery reads approval and publication records in place. Run publishing and master-data releases from `uma-platform` using its established commands and owner approval.
-
-The initial gallery and album code came from the Uma Platform character art tools.
+Commit source code and synthetic fixtures only. Keep originals, drafts, exact approvals, manifests, references and generated files under the ignored `content/`. CI validates the Git index.
