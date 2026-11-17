@@ -1,4 +1,4 @@
-// `pnpm art:push <universe>… | --all [--only <id|outfit|character>,…] [--portraits] [--dry-run]`: publishes a universe's owner-approved looks to Uma Character Art,
+// `pnpm run publish <universe>… | --all [--only <id|outfit|character>,…] [--portraits] [--dry-run]`: publishes a universe's owner-approved looks to Uma Character Art,
 // `gs://uma-platform-content/art/universes/<universe>/` (CA4, AP73–AP82). Only a look whose manifest entry says the owner
 // approved it, and whose PNG still has the approved hash and size, goes up, byte for byte. Nothing is ever deleted there.
 // It then flags each look as published beside the manifest, where the local gallery shows it. With `--portraits` it
@@ -27,7 +27,7 @@ if (portraits && enemies) throw new Error('--portraits and --enemies are separat
 const named = args.filter((a) => !a.startsWith('--'))
 const all = portraits ? portraitUniverses() : enemies ? enemyUniverses() : universesIn()
 const universes = args.includes('--all') ? all : named
-if (universes.length === 0) throw new Error(`Name a universe, or --all: pnpm art:push <${all.join('|') || 'universe'}>… [--dry-run]`)
+if (universes.length === 0) throw new Error(`Name a universe, or --all: pnpm run publish <${all.join('|') || 'universe'}>… [--dry-run]`)
 for (const u of universes) if (!isUniverse(u) || !all.includes(u)) throw new Error(`No approved ${portraits ? 'dialogue portraits' : enemies ? 'enemy collection' : 'collection'} for "${u}" in ${authoring}. There: ${all.join(', ') || 'none'}.`)
 
 const now = new Date().toISOString()
