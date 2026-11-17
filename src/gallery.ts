@@ -51,6 +51,11 @@ createServer((req, res) => {
 
   try {
     const { pathname, searchParams } = new URL(req.url ?? '/', `http://127.0.0.1:${port}`)
+    // Quest's approved comparison has outfit anchors used by its existing review links.
+    if (pathname === '/high-fantasy/approved/review.html') {
+      const review = fileFor(authoring, pathname)
+      if (review) return serve(review)
+    }
     const next = oldLists.get(pathname)
     if (next) {
       res.writeHead(302, { Location: next, 'Cache-Control': 'no-store' })
