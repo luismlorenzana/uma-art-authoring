@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "uma-art-authoring",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "gallery"
+      ],
+      "port": 4323
+    }
+  ]
+}
