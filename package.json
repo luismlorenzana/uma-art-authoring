@@ -15,7 +15,8 @@
     "publish": "node --import tsx src/push.ts",
     "status": "node --import tsx src/status.ts",
     "cast": "node --import tsx src/cast.ts",
-    "study": "node tools/splash-study.mjs"
+    "study": "node tools/splash-study.mjs",
+    "rosters": "node tools/prepare-rosters.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

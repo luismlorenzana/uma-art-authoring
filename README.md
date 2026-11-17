@@ -1,6 +1,16 @@
 # Uma Art Authoring
 
 Run `pnpm install` and `pnpm gallery` for the [Local Art Gallery](http://127.0.0.1:4323).
+Choose Uma Quest, Uma Farm, or Uma Cyberpunk, then choose an art type and open an album.
+Characters follow the first five Ranker tiers. The first authored look takes the card image
+when available. Albums use Character Art, Facial Expressions, and Splash Art in every universe.
+Cyberpunk also has Boss Enemy, Boss Ally, and Lieutenant albums. Boss Ally shows the
+existing off-duty looks and the shared pilot suits.
+
+`pnpm rosters --dry-run` checks the three rosters and their full-body baselines against the existing
+ranked baseline library. `pnpm rosters` fills missing character folders, references, and briefs,
+then updates the ordered lists. It preserves existing authoring files.
+
 `pnpm albums --check` compares generated pages with the saved albums. `pnpm albums` rebuilds the albums in place.
 
 Private work lives in `content/authoring/`, including `character-universes/` and `splash-art/`.
