@@ -7,7 +7,7 @@ when available. Albums use Character Art, Facial Expressions, and Splash Art in 
 Cyberpunk also has Boss Enemy, Boss Ally, and Lieutenant albums. Boss Ally shows the
 existing off-duty looks and the shared pilot suits.
 
-Farm has four additional collections, Pajama Outfits, Wedding Anniversary Outfits,
+Every Farm character album has four additional tabs, Pajama Outfits, Wedding Anniversary Outfits,
 Pajama Splash, and Wedding Anniversary Splash. Run `pnpm farm:categories` once to prepare
 their 50 character folders. `--dry-run` previews missing files.
 

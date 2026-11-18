@@ -42,14 +42,17 @@ it('keeps the ranked order, with the first authored look on the card and an imag
   expect(list).not.toContain('Opposes')
 })
 
-it('gives each Farm category its own ranked albums and excludes its published art from the standard album', () => {
+it('puts the four additional collections in each Farm character album and keeps their art separate', () => {
   const { mounts, put } = fixture()
   const farm = galleryPage(mounts, '/gallery/farm-life', blank)!
   for (const [key, category] of Object.entries(farmCategories)) {
-    expect(farm).toContain(category.label)
-    const list = galleryPage(mounts, '/gallery/farm-life/' + key, blank)!
-    expect(list.match(/data-entry /g)).toHaveLength(2)
-    expect(list).toContain('zoe-vale/references/art.webp')
+    expect(farm).not.toContain(category.label)
+    for (const character of ['zoe-vale', 'amber-reed']) {
+      const page = galleryPage(mounts, '/gallery/farm-life/characters/' + character, new URLSearchParams('view=' + key))!
+      expect(page).toContain(`?view=${key}" aria-current="page">${category.label}</a>`)
+      expect(page.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(7)
+      expect(page).toContain('No art in this collection yet.')
+    }
   }
   put('work/farm-life/categories/pajama-outfits/characters/zoe-vale/v001/manifest.json', {
     fullBodyAssets: [
@@ -62,11 +65,11 @@ it('gives each Farm category its own ranked albums and excludes its published ar
     { id: 'anniversary', character: 'Zoe & Vale', category: 'wedding-anniversary-splash', kind: 'splash', path: 'images/anniversary.png' },
   ] })
   put('art/universes/farm-life/images/anniversary.png')
-  const outfit = galleryPage(mounts, '/gallery/farm-life/pajama-outfits/zoe-vale', blank)!
+  const outfit = galleryPage(mounts, '/gallery/farm-life/characters/zoe-vale', new URLSearchParams('view=pajama-outfits'))!
   expect(outfit).toContain('one.png')
   expect(outfit).toContain('two.png')
   expect(outfit).not.toContain('anniversary.png')
-  const extra = galleryPage(mounts, '/gallery/farm-life/wedding-anniversary-splash/zoe-vale', blank)!
+  const extra = galleryPage(mounts, '/gallery/farm-life/characters/zoe-vale', new URLSearchParams('view=wedding-anniversary-splash'))!
   expect(extra).toContain('images/anniversary.png')
   expect(extra).not.toContain('one.png')
   expect(galleryPage(mounts, '/gallery/farm-life/characters/zoe-vale', new URLSearchParams('view=splash'))).not.toContain('anniversary.png')

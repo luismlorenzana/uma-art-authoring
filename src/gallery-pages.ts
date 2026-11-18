@@ -1,5 +1,5 @@
 import { artTypes, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work } from './gallery-data.js'
-import { farmCategories, isArtCategory } from './art-categories.js'
+import { farmCategories, isArtCategory, type ArtCategory } from './art-categories.js'
 
 const html = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
 const urlFor = (universe: Universe, type?: ArtType, id?: string) =>
@@ -74,7 +74,7 @@ function listPage(mounts: Mounts, u: Universe, type: ArtType, roster: Entry[]) {
 }
 
 const tabs = { art: 'Character Art', expressions: 'Facial Expressions', splash: 'Splash Art' } as const
-type Tab = keyof typeof tabs
+type Tab = keyof typeof tabs | ArtCategory
 
 function portraitPanel(mounts: Mounts, u: Universe, type: ArtType, entry: Entry) {
   const sets = library(mounts, u, type).portraits(entry)
@@ -88,20 +88,19 @@ function portraitPanel(mounts: Mounts, u: Universe, type: ArtType, entry: Entry)
 function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, tab: Tab) {
   const lib = library(mounts, u, type)
   const label = artTypes[type].label
-  if (isArtCategory(type)) {
-    const files = lib.files(entry)
-    const baseline = lib.baseline(entry)
-    const reference = baseline ? `<a class="baseline-link" href="${html(baseline)}" target="_blank" rel="noopener">Open full-body baseline ${chevron}</a>` : ''
-    const panel = files.length ? artGrid(files) : '<p class="empty">No art in this collection yet.</p>'
-    return frame(entry.name, [{ label: u.title, href: urlFor(u) }, { label, href: urlFor(u, type) }, { label: entry.name }],
-      headline(entry.name, label + ' · ' + entry.tier) + `<section class="${farmCategories[type].kind === 'splash' ? 'splash' : 'album'}" aria-label="${html(label)}">${panel}${reference}</section>`, u.accent)
-  }
+  const extra = isArtCategory(tab) ? tab : undefined
+  const sections: Readonly<Record<string, string>> = u.slug === 'farm-life' && type === 'characters'
+    ? { ...tabs, ...Object.fromEntries(Object.entries(farmCategories).map(([key, value]) => [key, value.label])) }
+    : tabs
   const base = urlFor(u, type, entry.id)
-  const nav = `<nav class="tabs" aria-label="Album sections">${Object.entries(tabs).map(([value, name]) =>
+  const nav = `<nav class="tabs" aria-label="Album sections">${Object.entries(sections).map(([value, name]) =>
     `<a href="${base}${value === 'art' ? '' : '?view=' + value}"${tab === value ? ' aria-current="page"' : ''}>${name}</a>`).join('')}</nav>`
-  const files = tab === 'expressions' ? [] : lib.files(entry, tab === 'splash')
+  const splash = tab === 'splash' || (extra && farmCategories[extra].kind === 'splash')
+  const collection = extra ? library(mounts, u, extra) : lib
+  const subject = extra ? entries(mounts, u, extra).find((person) => person.id === entry.id)! : entry
+  const files = tab === 'expressions' ? [] : collection.files(subject, Boolean(splash))
   const baseline = tab === 'art' ? lib.baseline(entry) : ''
-  let panel = files.length ? artGrid(files) : '<p class="empty">No splash art yet.</p>'
+  let panel = files.length ? artGrid(files) : `<p class="empty">${extra ? 'No art in this collection yet.' : 'No splash art yet.'}</p>`
   if (tab === 'expressions') panel = portraitPanel(mounts, u, type, entry)
   if (tab === 'art') {
     const reference = baseline ? `<a class="baseline-link" href="${html(baseline)}" target="_blank" rel="noopener">Open full-body baseline ${chevron}</a>` : ''
@@ -111,7 +110,7 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   }
   const context = [entry.tier, pairing(entry, type)].filter(Boolean).join(' · ')
   return frame(entry.name, [{ label: u.title, href: urlFor(u) }, { label, href: urlFor(u, type) }, { label: entry.name }],
-    headline(entry.name, context) + nav + `<section class="${tab === 'splash' ? 'splash' : 'album'}" aria-label="${tabs[tab]}">${panel}</section>`,
+    headline(entry.name, context) + nav + `<section class="${splash ? 'splash' : 'album'}" aria-label="${sections[tab]}">${panel}</section>`,
     u.accent, tab === 'expressions' ? 'gallery.mjs' : undefined)
 }
 
@@ -129,6 +128,7 @@ export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchP
   const character = roster.find((item) => item.id === id)
   if (!character) return null
   const view = search.get('view')
-  const tab = view === 'expressions' || view === 'splash' ? view : 'art'
+  const categoryView = universe.slug === 'farm-life' && type === 'characters' && isArtCategory(view) ? view : undefined
+  const tab = categoryView ?? (view === 'expressions' || view === 'splash' ? view : 'art')
   return memberPage(mounts, universe, type, character, tab)
 }
