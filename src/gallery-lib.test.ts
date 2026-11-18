@@ -42,6 +42,62 @@ it('keeps the ranked order, with the first authored look on the card and an imag
   expect(list).not.toContain('Opposes')
 })
 
+it('scopes Weapons and Combat Sprites by enemy album and unit ID', () => {
+  const { mounts, put } = fixture()
+  const roles = [
+    ['bosses', 'enemies', 'unit-one'],
+    ['boss-allies', 'enemies/casual', 'unit-one'],
+    ['lieutenants', 'enemies/lieutenants', 'unit-two'],
+  ] as const
+  for (const [type, folder, id] of roles) {
+    put(`work/cyberpunk/${folder}/cast/tier-1/01-rider/common-name/character.json`, {
+      id, name: 'Common Name', uma: { name: 'Rider One' },
+    })
+    for (const category of ['weapons', 'combat-sprites']) {
+      const work = `work/cyberpunk/${folder}/categories/${category}/characters/${id}/v001`
+      put(work + '/manifest.json', { fullBodyAssets: [{ id: 'first', outfit: 'first', image: type + '-' + category + '.png' }] })
+      put(work + '/' + type + '-' + category + '.png')
+      const html = galleryPage(mounts, `/gallery/cyberpunk/${type}/${id}`, new URLSearchParams('view=' + category))!
+      expect(html).toContain(`view=${category}" aria-current="page"`)
+      expect(html).toContain(type + '-' + category + '.png')
+      expect(html.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(5)
+      const ordinary = galleryPage(mounts, `/gallery/cyberpunk/${type}/${id}`, blank)!
+      expect(ordinary).not.toContain(type + '-' + category + '.png')
+    }
+  }
+  const ally = galleryPage(mounts, '/gallery/cyberpunk/boss-allies/unit-one', new URLSearchParams('view=weapons'))!
+  expect(ally).not.toContain('bosses-weapons.png')
+  expect(ally).not.toContain('lieutenants-weapons.png')
+})
+
+it('adds Weapons and Combat Sprites to Cyberpunk crew albums with independent content', () => {
+  const { mounts, put } = fixture()
+  put('work/cyberpunk/cast/roster.json', { characters: [
+    { name: 'Rider One', tier: 'T1', record: '../characters/rider-one/character.json' },
+  ] })
+  const path = '/gallery/cyberpunk/characters/rider-one'
+  const base = 'work/cyberpunk/categories/'
+  put(base + 'weapons/characters/rider-one/v001/manifest.json', {
+    fullBodyAssets: [{ id: 'sword', outfit: 'blade', image: 'weapon.png' }],
+  })
+  put(base + 'weapons/characters/rider-one/v001/weapon.png')
+  put(base + 'combat-sprites/approved/manifest.json', {
+    assets: [{ character: 'Rider One', id: 'idle', outfit: 'armor', image: 'idle.png', approval: { status: 'approved' } }],
+  })
+  put(base + 'combat-sprites/approved/idle.png')
+  const weapons = galleryPage(mounts, path, new URLSearchParams('view=weapons'))!
+  expect(weapons).toContain('?view=weapons" aria-current="page">Weapons</a>')
+  expect(weapons).toContain('weapon.png')
+  expect(weapons).not.toContain('idle.png')
+  expect(weapons.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(5)
+  const sprites = galleryPage(mounts, path, new URLSearchParams('view=combat-sprites'))!
+  expect(sprites).toContain('?view=combat-sprites" aria-current="page">Combat Sprites</a>')
+  expect(sprites).toContain('idle.png')
+  expect(sprites).not.toContain('weapon.png')
+  expect(galleryPage(mounts, '/gallery/cyberpunk', blank)).not.toContain('>Weapons<')
+  expect(galleryPage(mounts, '/gallery/farm-life/characters/zoe-vale', blank)).not.toContain('?view=weapons')
+})
+
 it('puts the four additional collections in each Farm character album and keeps their art separate', () => {
   const { mounts, put } = fixture()
   const farm = galleryPage(mounts, '/gallery/farm-life', blank)!

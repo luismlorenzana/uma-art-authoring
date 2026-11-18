@@ -17,7 +17,8 @@
     "cast": "node --import tsx src/cast.ts",
     "study": "node tools/splash-study.mjs",
     "rosters": "node tools/prepare-rosters.mjs",
-    "farm:categories": "node --import tsx tools/prepare-farm-categories.ts"
+    "farm:categories": "node --import tsx tools/prepare-farm-categories.ts",
+    "cyberpunk:categories": "node --import tsx tools/prepare-character-categories.ts --universe cyberpunk"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

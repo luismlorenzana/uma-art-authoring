@@ -8,7 +8,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFile
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { FLAG_SCRIPT } from './flag.js'
-import { categoryFolder, farmCategories, type ArtCategory } from './art-categories.js'
+import { categoryFolder, artCategories, categoriesFor, supportsCategory, type ArtCategory } from './art-categories.js'
 import { authoring, content, SITE } from '../paths.mjs'
 export { authoring, content, SITE } from '../paths.mjs'
 
@@ -169,7 +169,7 @@ export function readCollection(universe: string, dir: string): Collection {
       }
     }),
   ]
-  if (universe === 'farm-life') for (const [category, config] of Object.entries(farmCategories) as [ArtCategory, typeof farmCategories[ArtCategory]][]) {
+  for (const [category, config] of Object.entries(categoriesFor(universe)) as [ArtCategory, typeof artCategories[ArtCategory]][]) {
     const root = resolve(dir, '..', categoryFolder(category)), approved = join(root, 'approved')
     const categoryManifest = existsSync(join(approved, MANIFEST)) ? JSON.parse(readFileSync(join(approved, MANIFEST), 'utf8')) as unknown : null
     const shared = object(categoryManifest) && Array.isArray(categoryManifest.assets) ? categoryManifest.assets as unknown[] : []
@@ -469,7 +469,7 @@ export function writeFlags(dir: string, publication: Publication): string[] {
     if (write(file, encode(kept))) changed.push(`${at}/${RECORD}`)
     if (write(join(splashDir, RECORD_SCRIPT), recordScript(kept, RECORD))) changed.push(`${at}/${RECORD_SCRIPT}`)
   }
-  for (const category of Object.keys(farmCategories) as ArtCategory[]) {
+  for (const category of Object.keys(categoriesFor(publication.universe)) as ArtCategory[]) {
     const collection = categoryFolder(category), categoryDir = resolve(dir, '..', collection, 'approved')
     const mine = sliceOf(publication, collection, (p) => slashed(relative(categoryDir, resolve(dir, p))))
     if (!mine.looks.length && !existsSync(join(categoryDir, RECORD))) continue
@@ -557,7 +557,7 @@ export interface PushResult {
  * the bucket: a withdrawn look leaves the index and its file stays, with the bucket's older versions.
  */
 export function push(universe: string, dir: string, mirrorDir: string, remote: Remote, now: string, options: { dryRun?: boolean; only?: readonly string[]; category?: ArtCategory } = {}): PushResult {
-  if (options.category && universe !== 'farm-life') throw new Error('Art categories are supported in farm-life.')
+  if (options.category && !supportsCategory(universe, options.category)) throw new Error('This art category is not supported in ' + universe + '.')
   const collection = readCollection(universe, dir)
   const there = remote.read(INDEX)
   const before = parseIndex(there?.text ?? null, universe)

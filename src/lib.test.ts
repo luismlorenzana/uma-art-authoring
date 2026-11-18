@@ -56,6 +56,21 @@ function fakeRemote() {
 const T1 = '2026-01-03T10:00:00.000Z', T2 = '2026-01-04T10:00:00.000Z', T3 = '2026-01-05T10:00:00.000Z'
 
 describe('the approved collection', () => {
+  it('publishes Cyberpunk Weapons independently of the crew wardrobe and Combat Sprites', () => {
+    const base = temp()
+    const dir = universe(base, 'cyberpunk', [{ id: 'rider-one-street', outfit: 'street' }])
+    const bucket = fakeRemote()
+    push('cyberpunk', dir, temp(), bucket.remote, T1)
+    const original = bucket.index().looks[0]
+    universe(join(base, 'cyberpunk/categories'), 'weapons', [{ id: 'blade', outfit: 'blade' }])
+    universe(join(base, 'cyberpunk/categories'), 'combat-sprites', [{ id: 'idle', outfit: 'armor' }])
+    const result = push('cyberpunk', dir, temp(), bucket.remote, T2, { category: 'weapons' })
+    expect(result.uploaded).toEqual(['weapons-rider-one-blade'])
+    expect(bucket.index().looks.find(({ id }) => id === original!.id)).toEqual(original)
+    expect(bucket.index().looks.find(({ category }) => category === 'weapons')).toMatchObject({ character: 'Rider One' })
+    expect(bucket.index().looks.some(({ category }) => category === 'combat-sprites')).toBe(false)
+    expect(() => push('cyberpunk', dir, temp(), bucket.remote, T2, { category: 'pajama-outfits' })).toThrow(/not supported/)
+  })
   it('publishes one extra Farm category with approval checks and preserves the other collections', () => {
     const base = temp()
     const dir = universe(base, 'farm-life', [{ id: 'rider-one-street', outfit: 'street' }])
