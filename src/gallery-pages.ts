@@ -89,15 +89,15 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   const lib = library(mounts, u, type)
   const label = artTypes[type].label
   const extra = isArtCategory(tab) ? tab : undefined
-  const sections: Readonly<Record<string, string>> = type === 'characters'
+  const sections: Readonly<Record<string, string>> = type === 'characters' || u.slug === 'cyberpunk'
     ? { ...tabs, ...Object.fromEntries(Object.entries(categoriesFor(u.slug)).map(([key, value]) => [key, value.label])) }
     : tabs
   const base = urlFor(u, type, entry.id)
   const nav = `<nav class="tabs" aria-label="Album sections">${Object.entries(sections).map(([value, name]) =>
     `<a href="${base}${value === 'art' ? '' : '?view=' + value}"${tab === value ? ' aria-current="page"' : ''}>${name}</a>`).join('')}</nav>`
   const splash = tab === 'splash' || (extra && artCategories[extra].kind === 'splash')
-  const collection = extra ? library(mounts, u, extra) : lib
-  const subject = extra ? entries(mounts, u, extra).find((person) => person.id === entry.id)! : entry
+  const collection = extra ? library(mounts, u, type, extra) : lib
+  const subject = extra ? entries(mounts, u, type, extra).find((person) => person.id === entry.id)! : entry
   const files = tab === 'expressions' ? [] : collection.files(subject, Boolean(splash))
   const baseline = tab === 'art' ? lib.baseline(entry) : ''
   let panel = files.length ? artGrid(files) : `<p class="empty">${extra ? 'No art in this collection yet.' : 'No splash art yet.'}</p>`
@@ -128,7 +128,7 @@ export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchP
   const character = roster.find((item) => item.id === id)
   if (!character) return null
   const view = search.get('view')
-  const categoryView = type === 'characters' && isArtCategory(view) && supportsCategory(universe.slug, view) ? view : undefined
+  const categoryView = (type === 'characters' || universe.slug === 'cyberpunk') && isArtCategory(view) && supportsCategory(universe.slug, view) ? view : undefined
   const tab = categoryView ?? (view === 'expressions' || view === 'splash' ? view : 'art')
   return memberPage(mounts, universe, type, character, tab)
 }
