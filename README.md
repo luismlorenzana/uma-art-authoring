@@ -62,3 +62,7 @@ splash art, and dialogue portraits, then verify and promote the scoped Farm mast
 includes the Windows launcher workaround.
 
 Commit source code and synthetic fixtures only. Keep originals, drafts, exact approvals, manifests, references and generated files under the ignored `content/`. CI validates the Git index.
+
+## Cyberpunk four-pillar packets
+
+The [repository-local authoring queue](docs/handoff/cyberpunk-four-pillars/README.md) contains the coordinated Cyberpunk art packets. Start with Pillar 1's four splash scenes and use the shared game contract and private campaign register.

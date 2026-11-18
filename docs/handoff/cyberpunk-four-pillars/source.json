@@ -1,0 +1,49 @@
+{
+  "sourceRepository": "luismlorenzana/uma-cyberpunk",
+  "sourceRevision": "76462d648beed1b6da4a1586c6be6ec81dbe0422",
+  "canonicalQueue": "https://github.com/luismlorenzana/uma-cyberpunk/blob/main/docs/handoff/README.md#four-pillar-art-and-story-queue",
+  "kind": "art",
+  "firstPacket": "CY49",
+  "files": [
+    {
+      "source": "docs/handoff/tasks/CY49.md",
+      "target": "CY49.md",
+      "sourceSha256": "fadfc24df41952d8a59555efabd9754a0028314f8c677589ee7ce7aeb1dd5a8e"
+    },
+    {
+      "source": "docs/handoff/tasks/CY52.md",
+      "target": "CY52.md",
+      "sourceSha256": "e1c7a7c9bc8f974c75b9069854d2882c1aa2789d25399df2352a37491f5342ea"
+    },
+    {
+      "source": "docs/handoff/tasks/CY55.md",
+      "target": "CY55.md",
+      "sourceSha256": "ce36fdeecafe94787871520236287b47b111d6d281c7d8736b41be3d453c9cac"
+    },
+    {
+      "source": "docs/handoff/tasks/CY58.md",
+      "target": "CY58.md",
+      "sourceSha256": "dbaa5b0f846574f61c2dd92ef8fa2ad7beb34a2b69d0fa3b8b61eda05275bd0d"
+    },
+    {
+      "source": "docs/handoff/tasks/CY59.md",
+      "target": "CY59.md",
+      "sourceSha256": "7eaa4b535fe3f1c6428861ab9cee8151ae16bd9cb2fc619e8a92a6c159ea2382"
+    },
+    {
+      "source": "docs/handoff/tasks/CY60.md",
+      "target": "CY60.md",
+      "sourceSha256": "747cd565f8f79e3925cd9b5f4db5ab82fae0d28ce1b83dcd082638893656b90c"
+    },
+    {
+      "source": "docs/handoff/tasks/CY62.md",
+      "target": "CY62.md",
+      "sourceSha256": "521f099d9bf5f81e903b5ba7adc0b799c1dcafe800ef9167ea04e892ccf4bce0"
+    },
+    {
+      "source": "docs/design/campaign-art-delivery.md",
+      "target": "delivery-contract.md",
+      "sourceSha256": "25edc54393f2ff23bd52def715c54d4eb24a637618d51adf136b354f2d8f69ef"
+    }
+  ]
+}
