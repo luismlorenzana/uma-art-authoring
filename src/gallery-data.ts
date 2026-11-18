@@ -121,7 +121,7 @@ export function entries(mounts: Mounts, universe: Universe, type: ArtType): Entr
 export function categories(mounts: Mounts, universe: Universe): ArtType[] {
   const root = join(mounts.work, universe.slug)
   return (Object.keys(artTypes) as ArtType[]).filter((type) =>
-    isArtCategory(type) ? universe.slug === 'farm-life'
+    isArtCategory(type) ? false
       : type === 'characters' || children(join(root, ...artTypes[type].folder, 'cast')).some((entry) => entry.isDirectory()))
 }
 
