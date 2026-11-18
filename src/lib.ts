@@ -573,8 +573,10 @@ export function push(universe: string, dir: string, mirrorDir: string, remote: R
     if (unknown.length) throw new Error(`${universe}: --only names no approved or published look: ${unknown.join(', ')}.`)
   }
   const selected = selectionOf(only)
+  const heldCategory = new Set([...collection.looks, ...collection.refused].flatMap((look) =>
+    look.category === options.category && look.character ? [keyOf(look.character)] : []))
   const plan = planPush(collection, before, now, options.category
-    ? (look) => look.category === options.category && (!selected || selected(look))
+    ? (look) => look.category === options.category && (selected ? selected(look) : heldCategory.has(keyOf(look.character)))
     : selected)
   const result: PushResult = {
     universe, uploaded: plan.upload.map((l) => l.id), unchanged: plan.unchanged, withdrawn: plan.withdrawn, kept: plan.kept, refused: collection.refused,
