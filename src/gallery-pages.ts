@@ -1,5 +1,5 @@
 import { artTypes, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work } from './gallery-data.js'
-import { farmCategories, isArtCategory, type ArtCategory } from './art-categories.js'
+import { artCategories, categoriesFor, isArtCategory, supportsCategory, type ArtCategory } from './art-categories.js'
 
 const html = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
 const urlFor = (universe: Universe, type?: ArtType, id?: string) =>
@@ -89,13 +89,13 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   const lib = library(mounts, u, type)
   const label = artTypes[type].label
   const extra = isArtCategory(tab) ? tab : undefined
-  const sections: Readonly<Record<string, string>> = u.slug === 'farm-life' && type === 'characters'
-    ? { ...tabs, ...Object.fromEntries(Object.entries(farmCategories).map(([key, value]) => [key, value.label])) }
+  const sections: Readonly<Record<string, string>> = type === 'characters'
+    ? { ...tabs, ...Object.fromEntries(Object.entries(categoriesFor(u.slug)).map(([key, value]) => [key, value.label])) }
     : tabs
   const base = urlFor(u, type, entry.id)
   const nav = `<nav class="tabs" aria-label="Album sections">${Object.entries(sections).map(([value, name]) =>
     `<a href="${base}${value === 'art' ? '' : '?view=' + value}"${tab === value ? ' aria-current="page"' : ''}>${name}</a>`).join('')}</nav>`
-  const splash = tab === 'splash' || (extra && farmCategories[extra].kind === 'splash')
+  const splash = tab === 'splash' || (extra && artCategories[extra].kind === 'splash')
   const collection = extra ? library(mounts, u, extra) : lib
   const subject = extra ? entries(mounts, u, extra).find((person) => person.id === entry.id)! : entry
   const files = tab === 'expressions' ? [] : collection.files(subject, Boolean(splash))
@@ -128,7 +128,7 @@ export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchP
   const character = roster.find((item) => item.id === id)
   if (!character) return null
   const view = search.get('view')
-  const categoryView = universe.slug === 'farm-life' && type === 'characters' && isArtCategory(view) ? view : undefined
+  const categoryView = type === 'characters' && isArtCategory(view) && supportsCategory(universe.slug, view) ? view : undefined
   const tab = categoryView ?? (view === 'expressions' || view === 'splash' ? view : 'art')
   return memberPage(mounts, universe, type, character, tab)
 }

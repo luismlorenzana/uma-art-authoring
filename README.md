@@ -7,6 +7,14 @@ when available. Albums use Character Art, Facial Expressions, and Splash Art in 
 Cyberpunk also has Boss Enemy, Boss Ally, and Lieutenant albums. Boss Ally shows the
 existing off-duty looks and the shared pilot suits.
 
+Every Cyberpunk crew character album also has Weapons and Combat Sprites tabs.
+Run `pnpm cyberpunk:categories` to prepare their character folders. Save versioned
+studies under `content/authoring/character-universes/cyberpunk/categories/<category>/characters/<key>/`,
+using `weapons` or `combat-sprites`. They use the same approval manifest and
+`active-study.json` format as the additional Farm collections below.
+Publish an approved selection with `pnpm run publish cyberpunk --category weapons --only <character-key> --dry-run`,
+or select `combat-sprites`. The published Character Art page groups these categories separately.
+
 Every Farm character album has four additional tabs, Pajama Outfits, Wedding Anniversary Outfits,
 Pajama Splash, and Wedding Anniversary Splash. Run `pnpm farm:categories` once to prepare
 their 50 character folders. `--dry-run` previews missing files.

@@ -8,7 +8,7 @@ import { mirror } from './lib.js'
 import { fileFor, typeOf } from './gallery-lib.js'
 import { artTypes, mediaFile, universes, type Mounts } from './gallery-data.js'
 import { galleryPage } from './gallery-pages.js'
-import { isArtCategory } from './art-categories.js'
+import { isArtCategory, supportsCategory } from './art-categories.js'
 
 const mounts: Mounts = { work: authoring, art: mirror, enemy: enemyMirror }
 const assets: Readonly<Record<string, string>> = {
@@ -53,7 +53,7 @@ createServer((req, res) => {
   try {
     const { pathname, searchParams } = new URL(req.url ?? '/', `http://127.0.0.1:${port}`)
     const previous = /^\/gallery\/farm-life\/([^/]+)(?:\/([^/]+))?\/?$/.exec(pathname)
-    if (previous && isArtCategory(previous[1])) {
+    if (previous && isArtCategory(previous[1]) && supportsCategory('farm-life', previous[1])) {
       const target = '/gallery/farm-life/characters' + (previous[2] ? '/' + previous[2] + '?view=' + previous[1] : '')
       res.writeHead(302, { Location: target, 'Cache-Control': 'no-store' })
       return res.end()

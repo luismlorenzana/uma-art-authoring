@@ -15,12 +15,12 @@ import { platform } from '../paths.mjs'
 import { enemiesDir, enemyMirror, enemyPrefix, enemySlice, enemyUniverses, pushEnemies } from './enemies.js'
 import { approvedDir, authoring, bucketRemote, BUCKET, isUniverse, mirror, push, remoteAt, universesIn } from './lib.js'
 import { portraitsDir, portraitUniverses, pushPortraits } from './portraits.js'
-import { isArtCategory } from './art-categories.js'
+import { isArtCategory, supportsCategory } from './art-categories.js'
 
 const initial = process.argv.slice(2).filter((a) => a !== '--')
 const categoryAt = initial.findIndex((arg) => arg === '--category' || arg.startsWith('--category='))
 const categoryName = categoryAt < 0 ? undefined : initial[categoryAt]!.split('=')[1] ?? initial[categoryAt + 1]
-if (categoryAt >= 0 && !isArtCategory(categoryName)) throw new Error('--category needs a supported Farm art category.')
+if (categoryAt >= 0 && !isArtCategory(categoryName)) throw new Error('--category needs a supported art category.')
 const category = isArtCategory(categoryName) ? categoryName : undefined
 const raw = initial.filter((arg, i) => i !== categoryAt && !(i === categoryAt + 1 && categoryAt >= 0 && !initial[categoryAt]!.includes('=')))
 // `--only a,b` or `--only=a,b`: only those looks (by id, outfit or character) change; every other look stays as the bucket has it.
@@ -36,7 +36,7 @@ const all = portraits ? portraitUniverses() : enemies ? enemyUniverses() : unive
 const universes = args.includes('--all') ? all : named
 if (universes.length === 0) throw new Error(`Name a universe, or --all: pnpm run publish <${all.join('|') || 'universe'}>… [--dry-run]`)
 for (const u of universes) if (!isUniverse(u) || !all.includes(u)) throw new Error(`No approved ${portraits ? 'dialogue portraits' : enemies ? 'enemy collection' : 'collection'} for "${u}" in ${authoring}. There: ${all.join(', ') || 'none'}.`)
-if (category && universes.some((universe) => universe !== 'farm-life')) throw new Error('--category is supported in farm-life.')
+if (category && universes.some((universe) => !supportsCategory(universe, category))) throw new Error('--category does not belong to the selected universe.')
 
 const now = new Date().toISOString()
 /** After a push: each universe's art on to master data `latest` (`pnpm art:release`, P203), unless told not to. */

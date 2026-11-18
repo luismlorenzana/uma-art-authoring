@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { keyOf } from './lib.js'
-import { categoryFolder, farmCategories, isArtCategory } from './art-categories.js'
+import { categoryFolder, artCategories, isArtCategory } from './art-categories.js'
 
 export const universes = [
   { slug: 'high-fantasy', title: 'Uma Quest', accent: 'quest' },
@@ -14,10 +14,12 @@ export const artTypes = {
   bosses: { singular: 'Boss Enemy', label: 'Boss Enemy', folder: ['enemies'] },
   'boss-allies': { singular: 'Boss Ally', label: 'Boss Ally', folder: ['enemies', 'casual'] },
   lieutenants: { singular: 'Lieutenant', label: 'Lieutenants', folder: ['enemies', 'lieutenants'] },
-  'pajama-outfits': { singular: 'Character', label: farmCategories['pajama-outfits'].label, folder: ['categories', 'pajama-outfits'] },
-  'wedding-anniversary-outfits': { singular: 'Character', label: farmCategories['wedding-anniversary-outfits'].label, folder: ['categories', 'wedding-anniversary-outfits'] },
-  'pajama-splash': { singular: 'Character', label: farmCategories['pajama-splash'].label, folder: ['categories', 'pajama-splash'] },
-  'wedding-anniversary-splash': { singular: 'Character', label: farmCategories['wedding-anniversary-splash'].label, folder: ['categories', 'wedding-anniversary-splash'] },
+  'pajama-outfits': { singular: 'Character', label: artCategories['pajama-outfits'].label, folder: ['categories', 'pajama-outfits'] },
+  'wedding-anniversary-outfits': { singular: 'Character', label: artCategories['wedding-anniversary-outfits'].label, folder: ['categories', 'wedding-anniversary-outfits'] },
+  'pajama-splash': { singular: 'Character', label: artCategories['pajama-splash'].label, folder: ['categories', 'pajama-splash'] },
+  'wedding-anniversary-splash': { singular: 'Character', label: artCategories['wedding-anniversary-splash'].label, folder: ['categories', 'wedding-anniversary-splash'] },
+  weapons: { singular: 'Character', label: artCategories.weapons.label, folder: ['categories', 'weapons'] },
+  'combat-sprites': { singular: 'Character', label: artCategories['combat-sprites'].label, folder: ['categories', 'combat-sprites'] },
 } as const
 
 export type Universe = typeof universes[number]
@@ -157,7 +159,7 @@ export function library(mounts: Mounts, universe: Universe, type: ArtType) {
   const approved = { dir: approvedDir, assets: rows(doc(join(approvedDir, 'manifest.json')).assets) }
 
   function files(entry: Entry, splash = false): Work[] {
-    if (category) splash = farmCategories[category].kind === 'splash'
+    if (category) splash = artCategories[category].kind === 'splash'
     const picked = new Map<string, Work>()
     const seenHashes = new Set<string>()
     const active = study(entry)
