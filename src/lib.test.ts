@@ -56,6 +56,32 @@ function fakeRemote() {
 const T1 = '2026-01-03T10:00:00.000Z', T2 = '2026-01-04T10:00:00.000Z', T3 = '2026-01-05T10:00:00.000Z'
 
 describe('the approved collection', () => {
+  it('publishes one extra Farm category with approval checks and preserves the other collections', () => {
+    const base = temp()
+    const dir = universe(base, 'farm-life', [{ id: 'rider-one-street', outfit: 'street' }])
+    const bucket = fakeRemote()
+    push('farm-life', dir, temp(), bucket.remote, T1)
+    const original = bucket.index().looks[0]
+    const categoryDir = universe(join(base, 'farm-life/categories'), 'pajama-outfits', [
+      { id: 'first', outfit: 'soft-pajamas' },
+      { id: 'draft', outfit: 'draft', approval: { status: 'pending' } },
+    ])
+    universe(join(base, 'farm-life/categories'), 'wedding-anniversary-splash', [
+      { id: 'evening', outfit: 'celebration' },
+    ])
+    const selected = push('farm-life', dir, temp(), bucket.remote, T2, { category: 'pajama-outfits' })
+    expect(selected.uploaded).toEqual(['pajama-outfits-rider-one-first'])
+    expect(selected.refused.map(({ id }) => id)).toEqual(['pajama-outfits-rider-one-draft'])
+    expect(bucket.index().looks.find(({ id }) => id === original!.id)).toEqual(original)
+    expect(bucket.index().looks.find(({ category }) => category === 'pajama-outfits')).toMatchObject({ outfit: 'soft-pajamas' })
+    expect(bucket.index().looks.some(({ category }) => category === 'wedding-anniversary-splash')).toBe(false)
+    const published = bucket.index().looks.find(({ category }) => category === 'pajama-outfits')!
+    expect(push('farm-life', dir, temp(), bucket.remote, T3, { category: 'pajama-outfits' }).uploaded).toEqual([])
+    expect(JSON.parse(readFileSync(join(categoryDir, 'publication.json'), 'utf8')).counts).toMatchObject({ published: 1, refused: 1 })
+    rmSync(join(base, 'farm-life/categories/pajama-outfits'), { recursive: true })
+    push('farm-life', dir, temp(), bucket.remote, T3)
+    expect(bucket.index().looks.find(({ id }) => id === published.id)).toEqual(published)
+  })
   it('reads each look the owner approved, and names a look by its outfit when it has no title', () => {
     const dir = universe(temp(), 'sky-city', [{ id: 'rider-one-street', outfit: 'street' }, { id: 'rider-one-pilot', outfit: 'pilot', title: 'Ship · Pilot suit' }])
     const c = readCollection('sky-city', dir)

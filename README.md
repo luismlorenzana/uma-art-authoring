@@ -7,6 +7,25 @@ when available. Albums use Character Art, Facial Expressions, and Splash Art in 
 Cyberpunk also has Boss Enemy, Boss Ally, and Lieutenant albums. Boss Ally shows the
 existing off-duty looks and the shared pilot suits.
 
+Farm has four additional collections, Pajama Outfits, Wedding Anniversary Outfits,
+Pajama Splash, and Wedding Anniversary Splash. Run `pnpm farm:categories` once to prepare
+their 50 character folders. `--dry-run` previews missing files.
+
+Work in `content/authoring/character-universes/farm-life/categories/<category>/characters/<key>/vNNN/`.
+An approved `active-study.json` beside the versions selects a manifest with `fullBodyAssets`
+for outfits or `assets` for splash art. Each asset needs its character, id, outfit, image,
+dimensions, SHA-256, and dated owner approval. Category-wide approved selections can instead
+live in `categories/<category>/approved/manifest.json`. Give each selection a unique id
+within that character's category. The ranked roster and baseline references are reused.
+
+Publish a category with `pnpm run publish farm-life --category pajama-outfits --only <character-key> --dry-run`.
+Use `pajama-outfits`, `wedding-anniversary-outfits`, `pajama-splash`, or
+`wedding-anniversary-splash`. Remove `--dry-run` on the owner's publishing instruction.
+The index carries the category to Character Art, where it has its own heading on the
+character's page. These extra collections have their own approval and publication records.
+Category publishing updates Character Art. The standard game scene set continues to use
+the standard splash collection.
+
 `pnpm rosters --dry-run` checks the three rosters and their full-body baselines against the existing
 ranked baseline library. `pnpm rosters` fills missing character folders, references, and briefs,
 then updates the ordered lists. It preserves existing authoring files.

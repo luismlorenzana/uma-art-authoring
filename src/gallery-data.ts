@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { keyOf } from './lib.js'
+import { categoryFolder, farmCategories, isArtCategory } from './art-categories.js'
 
 export const universes = [
   { slug: 'high-fantasy', title: 'Uma Quest', accent: 'quest' },
@@ -13,6 +14,10 @@ export const artTypes = {
   bosses: { singular: 'Boss Enemy', label: 'Boss Enemy', folder: ['enemies'] },
   'boss-allies': { singular: 'Boss Ally', label: 'Boss Ally', folder: ['enemies', 'casual'] },
   lieutenants: { singular: 'Lieutenant', label: 'Lieutenants', folder: ['enemies', 'lieutenants'] },
+  'pajama-outfits': { singular: 'Character', label: farmCategories['pajama-outfits'].label, folder: ['categories', 'pajama-outfits'] },
+  'wedding-anniversary-outfits': { singular: 'Character', label: farmCategories['wedding-anniversary-outfits'].label, folder: ['categories', 'wedding-anniversary-outfits'] },
+  'pajama-splash': { singular: 'Character', label: farmCategories['pajama-splash'].label, folder: ['categories', 'pajama-splash'] },
+  'wedding-anniversary-splash': { singular: 'Character', label: farmCategories['wedding-anniversary-splash'].label, folder: ['categories', 'wedding-anniversary-splash'] },
 } as const
 
 export type Universe = typeof universes[number]
@@ -25,6 +30,7 @@ export interface Entry {
   name: string
   key: string
   folder: string
+  referenceFolder?: string
   tier: string
   opponent?: string
 }
@@ -92,11 +98,13 @@ function image(mounts: Mounts, location: Location, file: unknown) {
 
 export function entries(mounts: Mounts, universe: Universe, type: ArtType): Entry[] {
   const root = join(mounts.work, universe.slug)
-  if (type === 'characters') {
+  if (type === 'characters' || isArtCategory(type)) {
     return rows(doc(join(root, 'cast', 'roster.json')).characters).flatMap((record) => {
       const name = str(record.name)
       const key = /^\.\.\/characters\/([a-z0-9-]+)\/character\.json$/.exec(str(record.record))?.[1]
-      return key && name ? [{ id: key, name, key, folder: join(root, 'characters', key), tier: str(record.tier) }] : []
+      const referenceFolder = join(root, 'characters', key ?? '')
+      const folder = isArtCategory(type) ? join(root, categoryFolder(type), 'characters', key ?? '') : referenceFolder
+      return key && name ? [{ id: key, name, key, folder, referenceFolder, tier: str(record.tier) }] : []
     })
   }
   const cast = join(root, ...artTypes[type].folder, 'cast')
@@ -113,7 +121,8 @@ export function entries(mounts: Mounts, universe: Universe, type: ArtType): Entr
 export function categories(mounts: Mounts, universe: Universe): ArtType[] {
   const root = join(mounts.work, universe.slug)
   return (Object.keys(artTypes) as ArtType[]).filter((type) =>
-    type === 'characters' || children(join(root, ...artTypes[type].folder, 'cast')).some((entry) => entry.isDirectory()))
+    isArtCategory(type) ? universe.slug === 'farm-life'
+      : type === 'characters' || children(join(root, ...artTypes[type].folder, 'cast')).some((entry) => entry.isDirectory()))
 }
 
 function study(entry: Entry) {
@@ -130,10 +139,15 @@ function match(record: Row, entry: Entry) {
 
 export function library(mounts: Mounts, universe: Universe, type: ArtType) {
   const root = join(mounts.work, universe.slug)
-  const published = type === 'characters'
+  const category = isArtCategory(type) ? type : undefined
+  const characterArt = type === 'characters' || category !== undefined
+  const published = characterArt
     ? { mount: 'art' as const, dir: join(mounts.art, 'universes', universe.slug) }
     : { mount: 'enemy' as const, dir: join(mounts.enemy, universe.slug) }
-  const live = rows(doc(join(published.dir, 'index.json')).looks).filter(({ kind }) => {
+  const live = rows(doc(join(published.dir, 'index.json')).looks).filter((look) => {
+    const { kind } = look
+    if (category) return look.category === category
+    if (look.category) return false
     if (type === 'bosses') return kind !== 'casual' && kind !== 'lieutenant'
     if (type === 'boss-allies') return kind === 'casual' || kind === 'base'
     if (type === 'lieutenants') return kind === 'lieutenant'
@@ -143,28 +157,30 @@ export function library(mounts: Mounts, universe: Universe, type: ArtType) {
   const approved = { dir: approvedDir, assets: rows(doc(join(approvedDir, 'manifest.json')).assets) }
 
   function files(entry: Entry, splash = false): Work[] {
+    if (category) splash = farmCategories[category].kind === 'splash'
     const picked = new Map<string, Work>()
     const seenHashes = new Set<string>()
     const active = study(entry)
-    const same = type === 'characters'
+    const same = characterArt
       ? (look: Row) => match(look, entry)
       : (look: Row) => look.unitId === entry.id
     const add = (look: Row, location: Location, status: Work['status']) => {
       const slot = str(splash ? look.scene || look.id : look.outfit || look.look || look.id)
-      if (!slot || picked.has(slot)) return
+      const slotKey = category ? str(look.id) : slot
+      if (!slotKey || picked.has(slotKey)) return
       const hash = str(look.sha256)
-      if (splash && hash && seenHashes.has(hash)) return
+      if ((splash || category) && hash && seenHashes.has(hash)) return
       const url = image(mounts, location, location.mount === 'work' ? look.image : look.path)
       if (!url) return
-      picked.set(slot, { label: str(look.title) || title(slot), url, status })
-      if (splash && hash) seenHashes.add(hash)
+      picked.set(slotKey, { label: str(look.title) || title(slot), url, status })
+      if ((splash || category) && hash) seenHashes.add(hash)
     }
     const splashDir = join(root, 'splash-art')
-    const local = splash ? { dir: splashDir, assets: rows(doc(join(splashDir, 'manifest.json')).assets) } : approved
+    const local = splash && !category ? { dir: splashDir, assets: rows(doc(join(splashDir, 'manifest.json')).assets) } : approved
     const addLocal = (look: Row, dir: string) => add(look, { mount: 'work', dir },
       look.ownerApproved === true || row(look.approval).status === 'approved' ? 'Approved' : 'In progress')
-    if (type === 'characters') {
-      const own = splash ? join(active.dir, 'splash-art') : active.dir
+    if (characterArt) {
+      const own = splash && !category ? join(active.dir, 'splash-art') : active.dir
       const records = splash ? rows(doc(join(own, 'manifest.json')).assets) : rows(active.manifest.fullBodyAssets)
       for (const look of records) addLocal(look, own)
     }
@@ -172,7 +188,7 @@ export function library(mounts: Mounts, universe: Universe, type: ArtType) {
     for (const look of live.filter((look) => same(look) && (look.kind === 'splash') === splash)) {
       add(look, published, 'Published')
     }
-    if (picked.size === 0 && !splash) {
+    if (picked.size === 0 && (!splash || category)) {
       const last = active.latest ? join(entry.folder, active.latest) : entry.folder
       for (const dir of [last, join(last, 'images'), join(last, 'full-body')]) {
         for (const file of children(dir)) {
@@ -186,10 +202,11 @@ export function library(mounts: Mounts, universe: Universe, type: ArtType) {
   }
 
   function baseline(entry: Entry) {
-    const info = doc(join(entry.folder, 'character.json'))
+    const folder = entry.referenceFolder ?? entry.folder
+    const info = doc(join(folder, 'character.json'))
     const candidates = rows(info.references)
     const ref = candidates.find((item) => item.kind === 'art') ?? candidates.find((item) => item.kind === 'face')
-    return image(mounts, { mount: 'work', dir: entry.folder }, ref?.file)
+    return image(mounts, { mount: 'work', dir: folder }, ref?.file)
   }
 
   function portraits(entry: Entry): Portrait[] {

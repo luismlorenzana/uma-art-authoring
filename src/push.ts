@@ -15,25 +15,33 @@ import { platform } from '../paths.mjs'
 import { enemiesDir, enemyMirror, enemyPrefix, enemySlice, enemyUniverses, pushEnemies } from './enemies.js'
 import { approvedDir, authoring, bucketRemote, BUCKET, isUniverse, mirror, push, remoteAt, universesIn } from './lib.js'
 import { portraitsDir, portraitUniverses, pushPortraits } from './portraits.js'
+import { isArtCategory } from './art-categories.js'
 
-const raw = process.argv.slice(2).filter((a) => a !== '--')
+const initial = process.argv.slice(2).filter((a) => a !== '--')
+const categoryAt = initial.findIndex((arg) => arg === '--category' || arg.startsWith('--category='))
+const categoryName = categoryAt < 0 ? undefined : initial[categoryAt]!.split('=')[1] ?? initial[categoryAt + 1]
+if (categoryAt >= 0 && !isArtCategory(categoryName)) throw new Error('--category needs a supported Farm art category.')
+const category = isArtCategory(categoryName) ? categoryName : undefined
+const raw = initial.filter((arg, i) => i !== categoryAt && !(i === categoryAt + 1 && categoryAt >= 0 && !initial[categoryAt]!.includes('=')))
 // `--only a,b` or `--only=a,b`: only those looks (by id, outfit or character) change; every other look stays as the bucket has it.
 const onlyAt = raw.findIndex((a) => a === '--only' || a.startsWith('--only='))
 const only = onlyAt === -1 ? [] : (raw[onlyAt]!.includes('=') ? raw[onlyAt]!.slice('--only='.length) : raw[onlyAt + 1] ?? '').split(',').map((s) => s.trim()).filter(Boolean)
 if (onlyAt !== -1 && only.length === 0) throw new Error('--only needs look ids or outfits, joined by commas.')
 const args = onlyAt === -1 ? raw : raw.filter((_, i) => i !== onlyAt && !(i === onlyAt + 1 && !raw[onlyAt]!.includes('=')))
 const dryRun = args.includes('--dry-run'), portraits = args.includes('--portraits'), enemies = args.includes('--enemies'), release = !args.includes('--no-release')
+if (category && (portraits || enemies)) throw new Error('--category selects outfit or splash collections.')
 if (portraits && enemies) throw new Error('--portraits and --enemies are separate pushes; run them one at a time.')
 const named = args.filter((a) => !a.startsWith('--'))
 const all = portraits ? portraitUniverses() : enemies ? enemyUniverses() : universesIn()
 const universes = args.includes('--all') ? all : named
 if (universes.length === 0) throw new Error(`Name a universe, or --all: pnpm run publish <${all.join('|') || 'universe'}>… [--dry-run]`)
 for (const u of universes) if (!isUniverse(u) || !all.includes(u)) throw new Error(`No approved ${portraits ? 'dialogue portraits' : enemies ? 'enemy collection' : 'collection'} for "${u}" in ${authoring}. There: ${all.join(', ') || 'none'}.`)
+if (category && universes.some((universe) => universe !== 'farm-life')) throw new Error('--category is supported in farm-life.')
 
 const now = new Date().toISOString()
 /** After a push: each universe's art on to master data `latest` (`pnpm art:release`, P203), unless told not to. */
 function toMasterData(pushed: readonly string[]): void {
-  if (!release || pushed.length === 0) return
+  if (!release || category || pushed.length === 0) return
   if (dryRun) { console.log(`\nDry run: master data untouched (a push runs pnpm art:release ${pushed.join(', ')} next).`); return }
   for (const universe of pushed) {
     console.log(`\nMaster data: pnpm art:release ${universe}`)
@@ -80,7 +88,7 @@ let refused = 0
 for (const universe of universes) {
   console.log(`${dryRun ? 'Would publish' : 'Publishing'} ${universe}: ${approvedDir(universe)} → gs://${BUCKET}/art/universes/${universe}/`)
   if (only.length) console.log(`  Only: ${only.join(', ')} (every other look stays as it is)`)
-  const r = push(universe, approvedDir(universe), mirror, bucketRemote(universe), now, { dryRun, only })
+  const r = push(universe, approvedDir(universe), mirror, bucketRemote(universe), now, { dryRun, only, category })
   console.log(`  ${r.uploaded.length} look${r.uploaded.length === 1 ? '' : 's'} ${dryRun ? 'to send' : 'sent'}, ${r.unchanged} already published`)
   for (const id of r.uploaded) console.log(`    ${id}`)
   if (r.withdrawn.length) console.log(`  ${r.withdrawn.length} ${dryRun ? 'would leave' : 'left'} the index (no longer approved here; the files stay in the bucket): ${r.withdrawn.join(', ')}`)

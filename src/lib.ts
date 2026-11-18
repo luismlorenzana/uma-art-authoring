@@ -8,6 +8,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFile
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { FLAG_SCRIPT } from './flag.js'
+import { categoryFolder, farmCategories, type ArtCategory } from './art-categories.js'
 import { authoring, content, SITE } from '../paths.mjs'
 export { authoring, content, SITE } from '../paths.mjs'
 
@@ -46,6 +47,7 @@ export function pngSize(bytes: Uint8Array): { width: number; height: number } | 
 
 /** A look the owner approved, whose file is still the one approved. */
 export interface ApprovedLook {
+  category?: ArtCategory
   id: string
   character: string
   outfit: string
@@ -64,7 +66,7 @@ export interface ApprovedLook {
 }
 /** A look of the manifest that can't go out. `unapproved`: the owner hasn't approved it. `damaged`: the file or its entry
  *  isn't what was approved, so a copy published earlier stays as it is. */
-export interface RefusedLook { id: string; image: string | null; kind: 'unapproved' | 'damaged'; why: string; collection?: string; character?: string }
+export interface RefusedLook { id: string; image: string | null; kind: 'unapproved' | 'damaged'; why: string; collection?: string; character?: string; category?: ArtCategory }
 
 // --- a character's own collection (P174)
 
@@ -146,7 +148,7 @@ export function readCollection(universe: string, dir: string): Collection {
   const splash = existsSync(splashFile) ? JSON.parse(readFileSync(splashFile, 'utf8')) as unknown : null
   const splashAssets = object(splash) && Array.isArray(splash.assets) ? (splash.assets as unknown[]).filter(object)
     .map((a, i) => ({ a, rank: typeof a.order === 'number' ? a.order : i + 1000 })).sort((x, y) => x.rank - y.rank).map((x) => x.a) : []
-  const sources: { asset: unknown; collection: string | null; kind?: 'splash'; id?: string; locate: (image: string | null) => string | null }[] = [
+  const sources: { asset: unknown; collection: string | null; kind?: 'splash'; category?: ArtCategory; id?: string; locate: (image: string | null) => string | null }[] = [
     ...(manifest.assets as unknown[]).map((asset) => ({
       asset, collection: null,
       locate: (image: string | null) => (image && /^[a-z0-9][a-z0-9._/-]{0,199}\.png$/.test(image) && !image.split('/').some((p) => p === '' || p.startsWith('.')) ? image : null),
@@ -167,11 +169,35 @@ export function readCollection(universe: string, dir: string): Collection {
       }
     }),
   ]
-  for (const { asset, collection, kind, id: named, locate } of sources) {
+  if (universe === 'farm-life') for (const [category, config] of Object.entries(farmCategories) as [ArtCategory, typeof farmCategories[ArtCategory]][]) {
+    const root = resolve(dir, '..', categoryFolder(category)), approved = join(root, 'approved')
+    const categoryManifest = existsSync(join(approved, MANIFEST)) ? JSON.parse(readFileSync(join(approved, MANIFEST), 'utf8')) as unknown : null
+    const shared = object(categoryManifest) && Array.isArray(categoryManifest.assets) ? categoryManifest.assets as unknown[] : []
+    const append = (assets: unknown[], folder: string, versionDir: string, name?: string) => {
+      for (const asset of assets.filter(object)) {
+        const who = text(asset.character) ?? name, own = text(asset.id)
+        sources.push({
+          asset: { ...asset, character: who }, category, collection: categoryFolder(category),
+          ...(config.kind === 'splash' ? { kind: 'splash' as const } : {}),
+          id: who && own ? `${category}-${keyOf(who)}-${own}` : undefined,
+          locate: (image) => {
+            const file = studyFile({ folder, versionDir }, image)
+            return file ? slashed(relative(dir, file)) : null
+          },
+        })
+      }
+    }
+    append(shared, root, approved)
+    for (const study of characterStudies(root)) {
+      const assets = config.kind === 'splash' ? study.manifest.assets : study.manifest.fullBodyAssets
+      append(Array.isArray(assets) ? assets as unknown[] : [], study.folder, study.versionDir, study.name)
+    }
+  }
+  for (const { asset, collection, kind, category, id: named, locate } of sources) {
     if (!object(asset)) continue
     const id = named ?? text(asset.id) ?? '(no id)', given = text(asset.image), image = locate(given), who = text(asset.character)
-    const refuse = (kind: RefusedLook['kind'], why: string) => { refused.push({ id, image: image ?? given, kind, why, ...(collection ? { collection } : {}), ...(who ? { character: who } : {}) }) }
-    if (!KEBAB.test(id) || id.length > 80) { refuse('damaged', 'its id isn’t a lowercase name joined by hyphens'); continue }
+    const refuse = (kind: RefusedLook['kind'], why: string) => { refused.push({ id, image: image ?? given, kind, why, ...(collection ? { collection } : {}), ...(who ? { character: who } : {}), ...(category ? { category } : {}) }) }
+    if (!KEBAB.test(id) || id.length > (category ? 160 : 80)) { refuse('damaged', 'its id isn’t a lowercase name joined by hyphens'); continue }
     if (seen.has(id)) { refuse('damaged', 'its id is listed twice'); continue }
     seen.add(id)
     order.push(id)
@@ -188,7 +214,7 @@ export function readCollection(universe: string, dir: string): Collection {
     if (!size || size.width !== asset.width || size.height !== asset.height) { refuse('damaged', 'the PNG isn’t the size its entry says'); continue }
     looks.push({
       id, character, outfit, title: text(asset.title) ?? words(outfit), image, bytes: bytes.byteLength, sha256: hash,
-      width: size.width, height: size.height, approvedOn: text(approval.on) ?? text(approval.date), ...(collection ? { collection } : {}), ...(kind ? { kind } : {}),
+      width: size.width, height: size.height, approvedOn: text(approval.on) ?? text(approval.date), ...(collection ? { collection } : {}), ...(kind ? { kind } : {}), ...(category ? { category } : {}),
     })
   }
   return {
@@ -201,6 +227,7 @@ export function readCollection(universe: string, dir: string): Collection {
 
 /** A published look: the approved PNG byte for byte, under a name that carries its hash. */
 export interface PublishedLook {
+  category?: ArtCategory
   id: string
   character: string
   outfit: string
@@ -249,7 +276,7 @@ export interface PushPlan {
   same: boolean
 }
 /** Which looks a push may change, by id, outfit or character (`--only`); without one, every look. */
-export type Selection = ((look: { id: string; outfit: string; character: string }) => boolean) | undefined
+export type Selection = ((look: { id: string; outfit: string; character: string; category?: ArtCategory }) => boolean) | undefined
 /** `--only pilot-one-pajamas,pajamas-playful,pilot-two`: a look is chosen when its id, its outfit or her key is named. */
 export const selectionOf = (names: readonly string[]): Selection => {
   if (names.length === 0) return undefined
@@ -271,7 +298,12 @@ export const newest = (a: number | null, b: number | null | undefined): number |
  */
 export function planPush(collection: Collection, remote: UniverseIndex | null, now: string, select?: Selection): PushPlan {
   const held = heldCharacters(collection)
-  const chosen = (look: { id: string; outfit: string; character: string }) => (select ? select(look) : held.has(keyOf(look.character)))
+  const categoryCharacters = new Set([...collection.looks, ...collection.refused].flatMap((look) =>
+    look.category && look.character ? [look.category + '/' + keyOf(look.character)] : []))
+  const chosen = (look: { id: string; outfit: string; character: string; category?: ArtCategory }) => {
+    if (select) return select(look)
+    return look.category ? categoryCharacters.has(look.category + '/' + keyOf(look.character)) : held.has(keyOf(look.character))
+  }
   const before = new Map((remote?.looks ?? []).map((l) => [l.id, l]))
   const damaged = new Set(collection.refused.filter((r) => r.kind === 'damaged').map((r) => r.id))
   const upload: ApprovedLook[] = [], looks: PublishedLook[] = []
@@ -280,7 +312,7 @@ export function planPush(collection: Collection, remote: UniverseIndex | null, n
     if (!chosen(look)) { if (old) looks.push(old); continue }
     if (!same) upload.push(look)
     looks.push({
-      ...{ id: look.id, character: look.character, outfit: look.outfit, title: look.title, path: publishedPath(look), bytes: look.bytes, sha256: look.sha256 }, ...(look.kind ? { kind: look.kind } : {}),
+      ...{ id: look.id, character: look.character, outfit: look.outfit, title: look.title, path: publishedPath(look), bytes: look.bytes, sha256: look.sha256 }, ...(look.kind ? { kind: look.kind } : {}), ...(look.category ? { category: look.category } : {}),
       width: look.width, height: look.height, approvedOn: look.approvedOn, publishedAt: same ? old!.publishedAt : now,
     })
   }
@@ -437,6 +469,14 @@ export function writeFlags(dir: string, publication: Publication): string[] {
     if (write(file, encode(kept))) changed.push(`${at}/${RECORD}`)
     if (write(join(splashDir, RECORD_SCRIPT), recordScript(kept, RECORD))) changed.push(`${at}/${RECORD_SCRIPT}`)
   }
+  for (const category of Object.keys(farmCategories) as ArtCategory[]) {
+    const collection = categoryFolder(category), categoryDir = resolve(dir, '..', collection, 'approved')
+    const mine = sliceOf(publication, collection, (p) => slashed(relative(categoryDir, resolve(dir, p))))
+    if (!mine.looks.length && !existsSync(join(categoryDir, RECORD))) continue
+    const record = stable(join(categoryDir, RECORD), mine), at = slashed(relative(dir, categoryDir))
+    if (write(join(categoryDir, RECORD), encode(record))) changed.push(`${at}/${RECORD}`)
+    if (write(join(categoryDir, RECORD_SCRIPT), recordScript(record, RECORD))) changed.push(`${at}/${RECORD_SCRIPT}`)
+  }
   // Each character collection keeps its own record beside her active study, its images named from there.
   for (const study of characterStudies(resolve(dir, '..'))) {
     const mine = sliceOf(publication, studyCollection(study.key), (p) => slashed(relative(study.folder, resolve(dir, p))))
@@ -516,23 +556,31 @@ export interface PushResult {
  * against the bucket's own size and MD5, then writes the index and, locally, the published flags. Nothing is deleted in
  * the bucket: a withdrawn look leaves the index and its file stays, with the bucket's older versions.
  */
-export function push(universe: string, dir: string, mirrorDir: string, remote: Remote, now: string, options: { dryRun?: boolean; only?: readonly string[] } = {}): PushResult {
+export function push(universe: string, dir: string, mirrorDir: string, remote: Remote, now: string, options: { dryRun?: boolean; only?: readonly string[]; category?: ArtCategory } = {}): PushResult {
+  if (options.category && universe !== 'farm-life') throw new Error('Art categories are supported in farm-life.')
   const collection = readCollection(universe, dir)
   const there = remote.read(INDEX)
   const before = parseIndex(there?.text ?? null, universe)
+  if (options.category && ![...collection.looks, ...(before?.looks ?? [])].some((look) => look.category === options.category)) {
+    throw new Error(`Nothing to publish: ${options.category} has no approved or published art.`)
+  }
   if (collection.looks.length === 0 && !before) throw new Error(`Nothing to publish: ${universe} has no approved look whose PNG matches its manifest.`)
   const only = options.only ?? []
   if (only.length) {
     // A name that matches nothing is a typo: say so before anything moves.
-    const known = [...collection.looks, ...(before?.looks ?? [])]
+    const known = [...collection.looks, ...(before?.looks ?? [])].filter((look) => !options.category || look.category === options.category)
     const unknown = only.filter((name) => !known.some((l) => l.id === name || l.outfit === name || keyOf(l.character) === name))
     if (unknown.length) throw new Error(`${universe}: --only names no approved or published look: ${unknown.join(', ')}.`)
   }
-  const plan = planPush(collection, before, now, selectionOf(only))
+  const selected = selectionOf(only)
+  const plan = planPush(collection, before, now, options.category
+    ? (look) => look.category === options.category && (!selected || selected(look))
+    : selected)
   const result: PushResult = {
     universe, uploaded: plan.upload.map((l) => l.id), unchanged: plan.unchanged, withdrawn: plan.withdrawn, kept: plan.kept, refused: collection.refused,
     indexed: !plan.same, publication: publicationOf(collection, options.dryRun ? before : plan.index, now), flagged: [],
   }
+  if (options.category) result.refused = result.refused.filter((look) => look.category === options.category)
   if (options.dryRun) return result
   // Only the pictures the new index lists from this machine: a look left unpublished, or one kept at its older picture
   // because --only didn't name it, stays off the bucket and the mirror.

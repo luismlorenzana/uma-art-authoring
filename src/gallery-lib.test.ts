@@ -5,6 +5,7 @@ import { afterEach, expect, it } from 'vitest'
 import { entries, library, mediaFile, universes, type Mounts } from './gallery-data.js'
 import { galleryPage } from './gallery-pages.js'
 import { fileFor, typeOf } from './gallery-lib.js'
+import { farmCategories } from './art-categories.js'
 
 const folders: string[] = []
 const blank = new URLSearchParams()
@@ -39,6 +40,37 @@ it('keeps the ranked order, with the first authored look on the card and an imag
   expect(list).toContain('amber-reed/references/art.webp')
   expect(list).not.toContain('zoe-vale/references/art.webp')
   expect(list).not.toContain('Opposes')
+})
+
+it('gives each Farm category its own ranked albums and excludes its published art from the standard album', () => {
+  const { mounts, put } = fixture()
+  const farm = galleryPage(mounts, '/gallery/farm-life', blank)!
+  for (const [key, category] of Object.entries(farmCategories)) {
+    expect(farm).toContain(category.label)
+    const list = galleryPage(mounts, '/gallery/farm-life/' + key, blank)!
+    expect(list.match(/data-entry /g)).toHaveLength(2)
+    expect(list).toContain('zoe-vale/references/art.webp')
+  }
+  put('work/farm-life/categories/pajama-outfits/characters/zoe-vale/v001/manifest.json', {
+    fullBodyAssets: [
+      { id: 'one', outfit: 'pajamas', image: 'one.png' },
+      { id: 'two', outfit: 'pajamas', image: 'two.png' },
+    ],
+  })
+  for (const key of ['one', 'two']) put('work/farm-life/categories/pajama-outfits/characters/zoe-vale/v001/' + key + '.png')
+  put('art/universes/farm-life/index.json', { looks: [
+    { id: 'anniversary', character: 'Zoe & Vale', category: 'wedding-anniversary-splash', kind: 'splash', path: 'images/anniversary.png' },
+  ] })
+  put('art/universes/farm-life/images/anniversary.png')
+  const outfit = galleryPage(mounts, '/gallery/farm-life/pajama-outfits/zoe-vale', blank)!
+  expect(outfit).toContain('one.png')
+  expect(outfit).toContain('two.png')
+  expect(outfit).not.toContain('anniversary.png')
+  const extra = galleryPage(mounts, '/gallery/farm-life/wedding-anniversary-splash/zoe-vale', blank)!
+  expect(extra).toContain('images/anniversary.png')
+  expect(extra).not.toContain('one.png')
+  expect(galleryPage(mounts, '/gallery/farm-life/characters/zoe-vale', new URLSearchParams('view=splash'))).not.toContain('anniversary.png')
+  expect(galleryPage(mounts, '/gallery/cyberpunk/pajama-outfits', blank)).toBeNull()
 })
 
 it('uses one album route for outfits, layered facial expressions, and splash art', () => {
