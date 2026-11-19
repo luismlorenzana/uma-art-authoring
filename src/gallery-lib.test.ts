@@ -164,6 +164,34 @@ it('uses one album route for outfits, layered facial expressions, and splash art
   expect(splash).not.toContain('approved/look.png')
 })
 
+it('finds published expressions by her name when the portrait index keys her differently from the roster', () => {
+  const { mounts, put } = fixture()
+  const universe = universes.find(({ slug }) => slug === 'farm-life')!
+  put('art/universes/farm-life/portraits/index.json', {
+    characters: [{ id: 'zoe-and-vale', name: 'Zoe & Vale' }, { id: 'amber-reed', name: 'Amber Reed' }, { id: 'zoe', name: 'Zoe' }],
+    bases: [
+      { id: 'zoe-and-vale-spring', character: 'zoe-and-vale', outfit: 'spring', path: 'bases/zoe-spring.png' },
+      { id: 'amber-reed-spring', character: 'amber-reed', outfit: 'spring', path: 'bases/amber-spring.png' },
+      { id: 'zoe-summer', character: 'zoe', outfit: 'summer', path: 'bases/other-summer.png' },
+    ],
+    faces: [{ id: 'zoe-and-vale-happy', character: 'zoe-and-vale', expression: 'happy', path: 'faces/zoe-happy.png' }],
+    states: [
+      { character: 'zoe-and-vale', outfit: 'spring', expression: 'neutral', base: 'zoe-and-vale-spring', face: null, at: null },
+      { character: 'zoe-and-vale', outfit: 'spring', expression: 'happy', base: 'zoe-and-vale-spring', face: 'zoe-and-vale-happy', at: { x: 4, y: 5 } },
+      { character: 'amber-reed', outfit: 'spring', expression: 'neutral', base: 'amber-reed-spring', face: null, at: null },
+    ],
+  })
+  for (const file of ['bases/zoe-spring.png', 'bases/amber-spring.png', 'bases/other-summer.png', 'faces/zoe-happy.png']) put(`art/universes/farm-life/portraits/${file}`)
+  const [zoe, amber] = entries(mounts, universe, 'characters')
+  const lib = library(mounts, universe, 'characters')
+  const hers = lib.portraits(zoe!)
+  expect(hers.map(({ label }) => label)).toEqual(['Spring'])
+  expect(hers[0]!.base).toContain('bases/zoe-spring.png')
+  expect(hers[0]!.states.map(({ label }) => label)).toEqual(['Neutral', 'Happy'])
+  expect(hers[0]!.states[1]).toMatchObject({ at: { x: 4, y: 5 } })
+  expect(lib.portraits(amber!).map(({ base }) => base.split('/').at(-1))).toEqual(['amber-spring.png'])
+})
+
 it('keeps boss enemy and ally looks separate and distinguishes enemies with the same name', () => {
   const { mounts, put } = fixture()
   for (const [dir, id] of [['enemies', 'unit-one'], ['enemies/casual', 'unit-one'], ['enemies/lieutenants', 'unit-two']]) {

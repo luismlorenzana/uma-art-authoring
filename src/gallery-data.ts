@@ -250,8 +250,12 @@ export function library(mounts: Mounts, universe: Universe, type: ArtType, selec
       const location = { mount: 'art' as const, dir: join(published.dir, 'portraits') }
       const index = doc(join(location.dir, 'index.json'))
       const faces = new Map(rows(index.faces).map((face) => [face.id, face]))
-      const states = rows(index.states).filter((state) => state.character === entry.key)
-      for (const record of rows(index.bases).filter((asset) => asset.character === entry.key)) {
+      // The index keys her by her folder when she was published, which can predate the roster's key (an apostrophe
+      // once spelled out, say), so she is hers by that key or by her name, the rule her looks already follow.
+      const hers = new Set([entry.key, ...rows(index.characters)
+        .filter((c) => keyOf(str(c.name)) === entry.key).map((c) => str(c.id)).filter(Boolean)])
+      const states = rows(index.states).filter((state) => hers.has(str(state.character)))
+      for (const record of rows(index.bases).filter((asset) => hers.has(str(asset.character)))) {
         const outfit = str(record.outfit)
         const base = image(mounts, location, record.path)
         if (!outfit || !base || sets.has(outfit)) continue
