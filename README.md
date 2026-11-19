@@ -68,3 +68,9 @@ Commit source code and synthetic fixtures only. Keep originals, drafts, exact ap
 Start with the [canonical Cyberpunk packet queue](https://github.com/luismlorenzana/uma-cyberpunk/blob/main/docs/handoff/README.md#four-pillar-art-and-story-queue) and [shared delivery contract](https://github.com/luismlorenzana/uma-cyberpunk/blob/main/docs/design/campaign-art-delivery.md). The art work begins with Pillar 1's four splash scenes.
 
 The local full handoff is at `content/cyberpunk-four-pillars/README.md`. Its source revision and hashes identify the canonical snapshot. `content/cyberpunk-four-pillars-handoff.json` identifies the game checkout and one shared private progress register. These local files stay ignored with other authoring material; cast, scripts, pictures and verdicts remain private. Refresh the handoff from the canonical queue when its contracts change.
+
+## Cyberpunk game publishing
+
+An approved Cyberpunk publish now updates Platform first, then runs the game’s scoped art-only publisher. Looks, portrait recipes, enemies and the Weapons/Combat Sprites category events pass their exact `--only` selection to the game. `--no-release` stops at Platform; `--dry-run` assesses currently published game sources without uploading. Farm retains its existing master-data release path.
+
+Set `UMA_CYBERPUNK_ROOT` to the game checkout, or use the existing ignored handoff’s `canonicalGameCheckout`. The game registry is `content/campaign-art-plan/art-publish.json` (`CYBER_ART_CONFIG` overrides it). See the [game publishing runbook](https://github.com/luismlorenzana/uma-cyberpunk/blob/main/docs/technical/campaign-art-publishing.md) for candidates, private receipts, missing bindings and recovery. A game-stage failure exits nonzero after Platform may already have received the art; repair through the game’s `pnpm art:publish` command. Publishing a category does not implement an unfinished game renderer.
