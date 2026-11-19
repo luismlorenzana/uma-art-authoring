@@ -11,7 +11,8 @@
 // goes on to master data `latest` (portraits, illustrations, the candidate read back, promoted, profile pictures), so
 // publishing her art ends with the games able to read it. `--no-release` stops at Character Art; a dry run never goes on.
 import { spawnSync } from 'node:child_process'
-import { platform } from '../paths.mjs'
+import { platform, content } from '../paths.mjs'
+import { publishCyberpunkGame } from './game-release.js'
 import { enemiesDir, enemyMirror, enemyPrefix, enemySlice, enemyUniverses, pushEnemies } from './enemies.js'
 import { approvedDir, authoring, bucketRemote, BUCKET, isUniverse, mirror, push, remoteAt, universesIn } from './lib.js'
 import { portraitsDir, portraitUniverses, pushPortraits } from './portraits.js'
@@ -41,13 +42,17 @@ if (category && universes.some((universe) => !supportsCategory(universe, categor
 const now = new Date().toISOString()
 /** After a push: each universe's art on to master data `latest` (`pnpm art:release`, P203), unless told not to. */
 function toMasterData(pushed: readonly string[]): void {
-  if (!release || category || pushed.length === 0) return
-  if (dryRun) { console.log(`\nDry run: master data untouched (a push runs pnpm art:release ${pushed.join(', ')} next).`); return }
-  for (const universe of pushed) {
+  const masterUniverses = pushed.filter(u => u !== 'cyberpunk')
+  if (!release || category || masterUniverses.length === 0) return
+  if (dryRun) { console.log(`\nDry run: master data untouched (a push runs pnpm art:release ${masterUniverses.join(', ')} next).`); return }
+  for (const universe of masterUniverses) {
     console.log(`\nMaster data: pnpm art:release ${universe}`)
     const r = spawnSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['-s', 'art:release', universe], { cwd: platform, stdio: 'inherit', env: { ...process.env, ART_DIR: mirror }, shell: process.platform === 'win32' })
     if (r.status !== 0) { console.error(`art:release ${universe} stopped; Character Art has the art, master data latest doesn't yet. Fix it and run pnpm art:release ${universe}.`); process.exitCode = 1; return }
   }
+}
+function toCyberpunk(pushed: readonly string[], event: 'looks' | 'portraits' | 'enemies' | 'weapons' | 'combat-sprites'): void {
+  for (const universe of pushed) publishCyberpunkGame({ universe, event, only, dryRun, release, platformRoot: platform, contentRoot: content })
 }
 if (portraits) {
   for (const universe of universes) {
@@ -60,6 +65,7 @@ if (portraits) {
     if (r.kept.length) console.log(`  Kept as published (not on this machine, or outside --only): ${r.kept.join(', ')}`)
     for (const [key, c] of Object.entries(p.characters ?? {})) console.log(`    ${key}: ${c.state ?? p.state}, ${c.states} states from ${c.bases} crops and ${c.faces} faces`)
   }
+  toCyberpunk(universes, 'portraits')
   toMasterData(universes)
   process.exit()
 }
@@ -82,6 +88,7 @@ if (enemies) {
     console.log(`  Flags: ${lines.map(([name, c]) => line(name, c)).join('; ')}${r.flagged.length ? `; wrote ${r.flagged.join(', ')}` : ''}`)
   }
   if (refusedEnemies) process.exitCode = 1
+  else toCyberpunk(universes, 'enemies')
   process.exit()
 }
 let refused = 0
@@ -98,4 +105,4 @@ for (const universe of universes) {
   const c = r.publication.counts
   console.log(`  Flags: ${c.published} published, ${c.changed} changed, ${c.unpublished} not published, ${c.refused} refused${r.flagged.length ? `; wrote ${r.flagged.join(', ')}` : ''}`)
 }
-if (refused) { process.exitCode = 1; console.log(`\n${refused} look${refused === 1 ? '' : 's'} refused: master data not touched until the push is clean.`) } else toMasterData(universes)
+if (refused) { process.exitCode = 1; console.log(`\n${refused} look${refused === 1 ? '' : 's'} refused: master data not touched until the push is clean.`) } else { toCyberpunk(universes, category === 'weapons' || category === 'combat-sprites' ? category : 'looks'); toMasterData(universes) }
