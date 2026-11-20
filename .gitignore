@@ -1,0 +1,26 @@
+/node_modules/
+/content/
+/.cache/
+/dist/
+/coverage/
+.env*
+
+# Originals, drafts and generated media belong under /content/.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.avif
+*.bmp
+*.ico
+*.svg
+*.tiff
+*.psd
+
+# Owner-authorized original, character-free Farm scene studies.
+!assets/farm-life/scene-studies/v001/fireplace-sofa.png
+!assets/farm-life/scene-studies/v001/bedroom.png
+!assets/farm-life/scene-studies/v002/solo-armchair.png
+!assets/farm-life/scene-studies/v002/dual-armchairs.png
+!assets/farm-life/scene-studies/v003/bedroom.png
