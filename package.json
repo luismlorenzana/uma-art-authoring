@@ -18,6 +18,7 @@
     "study": "node tools/splash-study.mjs",
     "rosters": "node tools/prepare-rosters.mjs",
     "farm:categories": "node --import tsx tools/prepare-farm-categories.ts",
+    "farm:expressions": "node --import tsx tools/farm-expressions.mjs",
     "cyberpunk:categories": "node --import tsx tools/prepare-character-categories.ts --universe cyberpunk"
   },
   "devDependencies": {

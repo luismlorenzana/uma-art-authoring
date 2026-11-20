@@ -13,7 +13,7 @@ pnpm run publish farm-life "--only=$keys" --no-release --dry-run
 pnpm run publish farm-life "--only=$keys" --portraits --no-release --dry-run
 ```
 
-Review both plans. The first matches the normalized Character Art character name or look ID and includes outfits and splash PNGs. The portrait pass matches the character IDs in the portrait recipe, normally the local character folder keys. Verify the keys in each plan if their spellings differ. A full standard set is 12 outfit PNGs, 9 splash PNGs, 12 portrait bases, 15 face layers, and 192 dialogue states per character. Investigate missing or refused assets before publishing.
+Review both plans. The first matches the normalized Character Art character name or look ID and includes outfits and splash PNGs. The portrait pass matches the character IDs in the portrait recipe, normally the local character folder keys. Verify the keys in each plan if their spellings differ. The standard wardrobe has 12 outfit PNGs, 9 splash PNGs and 12 portrait bases. Use the [expression workflow](farm-life-expressions.md) and `pnpm farm:expressions check --manifest <selected-manifest> --approved` to check the selected reviews. The scene-based minimum is 126 reviews across the standard wardrobe, using up to 15 shared non-neutral faces. Existing complete 192-state approvals remain intact. Numbered looks add their own bases and scene requirements. Derive expected state counts from the selected manifest and approval records rather than requiring sixteen approved combinations for every new base. Keep exact hash/pixel verification and investigate missing or refused assets before publishing.
 
 ```powershell
 pnpm run publish farm-life "--only=$keys" --no-release

@@ -32,7 +32,8 @@ for (const role of roles) {
       const file = join(character.folder, 'brief.md')
       const source = relative(character.folder, join(character.referenceFolder!, 'character.json')).split(sep).join('/')
       create(file, `# ${character.name}\n\n${label} · ${character.tier}\n\n[Identity and baseline](${source})\n\nSave new art in v001/, v002/, and subsequent studies. ` +
-        `Use ${kind === 'splash' ? 'assets' : 'fullBodyAssets'} in the version manifest and record exact owner approval before publishing.\n`)
+        `Use ${kind === 'splash' ? 'assets' : 'fullBodyAssets'} in the version manifest and record exact owner approval before publishing.\n` +
+        (universe.slug === 'farm-life' && kind === 'look' ? '\nRead the Farm README and [married-life handoff](../../../married-life-handoff.md) before planning expression reviews. New numbered night looks require Neutral, Tender and Loving; baseline pajama slot 1 retains its broader scene coverage. Keep existing approvals and use the exact numbered portrait keys.\n' : ''))
     }
   }
 }

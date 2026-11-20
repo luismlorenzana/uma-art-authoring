@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 const allowedRoot = new Set(['.gitignore', 'README.md', 'package.json', 'pnpm-lock.yaml', 'tsconfig.json',
-  'paths.mjs', 'workspace.mjs', 'hub.mjs', 'docs/authoring/farm-life-splash-art/beach-spec.json', 'docs/farm-life-publishing.md', 'check-private.mjs', '.github/workflows/ci.yml', '.claude/launch.json',
+  'paths.mjs', 'workspace.mjs', 'hub.mjs', 'docs/authoring/farm-life-splash-art/beach-spec.json', 'docs/farm-life-publishing.md', 'docs/farm-life-expressions.md', 'check-private.mjs', '.github/workflows/ci.yml', '.claude/launch.json',
   // Owner-authorized original, character-free scene studies are listed individually.
   'docs/authoring/farm-life-splash-art/interior-scenes.md',
   'assets/farm-life/scene-studies/v001/fireplace-sofa.png',
