@@ -1,18 +1,17 @@
 # Farm interiors: scene studies and character authoring
 
-These three original, character-free environment illustrations establish a proposed shared look for married-life scenes: a solo armchair, two separate matching armchairs, and a close bedroom view. They are **candidates awaiting visual approval**. Earlier wide sofa and whole-bed studies remain historical; the revised direction calls for furniture and camera framing closer to the existing character splashes.
+These original, character-free environments establish the shared look for married-life scenes. **The solo armchair and dual armchairs v002 are owner approved (2026-11-19)**, bound to the unchanged image hashes below. The bedroom remains in review for mattress-to-frame alignment and fit. Earlier room studies remain historical.
 
 | Scene | Candidate | Native size | SHA-256 |
 |---|---|---|---|
-| Solo armchair · v002 | [PNG](../../../assets/farm-life/scene-studies/v002/solo-armchair.png) | 1672 × 941 | `9f6f007fa8530902b660a63aa169cfad0ee56de6917cb14d9bf5552959c1de92` |
-| Dual armchairs · v002 | [PNG](../../../assets/farm-life/scene-studies/v002/dual-armchairs.png) | 1672 × 941 | `57bb9d044f251f691a1421ff260eca1848244585232a05ec671499acf9983645` |
-| Bedroom · mattress correction v003 | [PNG](../../../assets/farm-life/scene-studies/v003/bedroom.png) | 1672 × 941 | `697271b46224b536e33395b333089e1a433b1d453d4c14fb228c7f3299c760a4` |
+| Solo armchair · v002 · approved | [PNG](../../../assets/farm-life/scene-studies/v002/solo-armchair.png) | 1672 × 941 | `9f6f007fa8530902b660a63aa169cfad0ee56de6917cb14d9bf5552959c1de92` |
+| Dual armchairs · v002 · approved | [PNG](../../../assets/farm-life/scene-studies/v002/dual-armchairs.png) | 1672 × 941 | `57bb9d044f251f691a1421ff260eca1848244585232a05ec671499acf9983645` |
 
 ![Solo armchair study](../../../assets/farm-life/scene-studies/v002/solo-armchair.png)
 
 ![Dual armchair study](../../../assets/farm-life/scene-studies/v002/dual-armchairs.png)
 
-![Bedroom study](../../../assets/farm-life/scene-studies/v003/bedroom.png)
+The current bedroom v004 is a private review candidate at `content/authoring/scene-studies/farm-life/married-life-interiors/v004/bedroom/image.png`; it is not an approved room reference yet. Both approved chair images already exist in the pushed repository and remain byte for byte unchanged.
 
 ## Visual direction
 
@@ -20,7 +19,21 @@ The existing Farm night illustrations supply the starting language: softly shade
 
 Room redesign is allowed, with continuity in furnishings and camera language from the existing splashes. The current direction specifically prefers one-person upholstered armchairs, separate solo and duo compositions, and an intimate character-scene view. Once a room reference is selected, use it consistently for its later character studies.
 
-The solo scene places the familiar rust-red, rolled-arm single chair near the center, with little exposed floor and a partial hearth on the left. The duo scene uses two separate matching chairs at equal scale and depth, mostly facing the viewer. The bedroom preserves the familiar arched headboard, floral pillows, lamp, bedside cabinets and night window in a closer, gently elevated view; the mattress continues through the lower crop. Its v003 correction replaces an overly inflated, wavy surface with a firmer level mattress under a thin fitted sheet. Winter night is the current lighting study; other seasons and story lighting can receive their own versions when requested.
+The solo scene places the familiar rust-red, rolled-arm single chair near the center, with little exposed floor and a partial hearth on the left. The duo scene uses two separate matching chairs at equal scale and depth, mostly facing the viewer. The bedroom direction preserves the familiar arched headboard, floral pillows, lamp, bedside cabinets and night window in a closer, gently elevated view. Winter night is the current lighting study; other seasons and story lighting can receive their own versions when requested.
+
+### Bedroom construction: prompt the fit before the fabric
+
+The owner clarified that the first mattress's soft fabric style was fine. The problem was an off-center mattress wider than its supporting frame. The v003 flattening edit addressed the wrong issue and is superseded.
+
+For the next bedroom generation, construct one coherent wooden frame and fitted mattress together:
+
+- Use one longitudinal centerline for the headboard, posts, mattress and pillows.
+- Fit the rear mattress corners between the posts with equal side margins.
+- Show two continuous wooden side rails just outside/below the mattress edges, with the mattress evenly inset throughout its visible length.
+- Give the rails and mattress the same perspective and vanishing point. Foreground widening must apply to both together.
+- Retain the first version's soft floral sheet, gentle folds and padded bedding style.
+
+The current v004 prompt leads with these relationships and uses the first soft bedroom as a material/furniture reference, explicitly excluding its flawed geometry. Its full exact prompt and provenance are saved privately for review.
 
 ## Scene purpose and posing
 
@@ -52,10 +65,10 @@ The sitting beat can use the solo or dual armchair setting; bedside and morning 
 
 ## Complete prompt and provenance handoff
 
-Ignored `content/authoring/scene-studies/farm-life/married-life-interiors/purpose-and-prompts.md` contains the full exact submitted prompts for the solo chair, duo chairs, original close bedroom and mattress-correction edit. It also records each scene's purpose, input roles and SHA-256 values, image hash, prompt hash and version lineage. Individual `prompt.txt`, `inputs.json` and `generation.json` files remain beside every private image; `active-study.json` identifies the exact mixed-version selection. The mattress correction retains its first bedroom as a parent rather than replacing its history.
+Ignored `content/authoring/scene-studies/farm-life/married-life-interiors/purpose-and-prompts.md` contains the full exact submitted prompts for the solo chair, duo chairs, original close bedroom, superseded flattening edit and fresh geometry-focused v004 generation. It also records each scene's purpose, input roles and SHA-256 values, image hash, prompt hash and version lineage. Individual `prompt.txt`, `inputs.json` and `generation.json` files remain beside every private image; `active-study.json` identifies the exact mixed-version selection and its approvals. `v002/scene-approvals.json` binds both owner-approved chair PNGs to the dated verdict. All earlier bedroom records remain as history.
 
 The committed PNGs are byte-for-byte native built-in image-generation outputs with no transforms. The exact-path Git exceptions cover the current and historical original environment files. Private character art, references, full prompts and source records retain their existing ignored storage rules.
 
-Historical v001 studies: [wide sofa](../../../assets/farm-life/scene-studies/v001/fireplace-sofa.png) and [whole-bed room](../../../assets/farm-life/scene-studies/v001/bedroom.png). They are superseded for the current camera/furniture direction, with their files and provenance retained.
+Historical studies: [v001 wide sofa](../../../assets/farm-life/scene-studies/v001/fireplace-sofa.png), [v001 whole-bed room](../../../assets/farm-life/scene-studies/v001/bedroom.png), and [v003 flattened mattress](../../../assets/farm-life/scene-studies/v003/bedroom.png). They are superseded, with their files and provenance retained.
 
-Next: obtain the owner's visual verdict on the three current room candidates, then apply the selected scene to the first requested character and outfit.
+Next: owner review of bedroom v004 geometry. The two approved chair references are ready for the first requested character/outfit pilot. Commit the selected new bedroom image when its review is complete.
