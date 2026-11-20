@@ -55,6 +55,18 @@ On the owner's publishing instruction, run `pnpm run publish <universe> [--enemi
 `--dry-run` plans a publish using existing bucket metadata. The publisher uses the existing scoped Google Cloud CLI configuration and bucket.
 `pnpm status` refreshes the publication records without uploading art.
 
+## Farm Life facial expressions
+
+Use the [Farm expression workflow](docs/farm-life-expressions.md) and the game's scene-based approval matrix.
+Run `pnpm farm:expressions plan` before a new expression pass, or use `--all-looks` to include numbered pajamas
+and formal anniversary looks. Existing approved sets are carried forward. New numbered night looks start with
+Neutral, Tender and Loving; actual story beats can add reviews. This changes the technical review workload while
+leaving character and outfit design free-form. The private Farm `README.md` and `handoff.md` identify current work;
+older pilot studies and pair runners remain historical records.
+
+`pnpm farm:expressions check --manifest <selected-manifest> --approved` checks planned review coverage and declared
+approvals. Continue running the saved-piece pixel/mask verifier and recording the owner's exact-image verdict.
+
 ## Farm Life publishing
 
 Use the [selected-character publishing runbook](docs/farm-life-publishing.md) to publish approved outfits,

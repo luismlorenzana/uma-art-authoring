@@ -102,6 +102,17 @@ describe('the universe albums', () => {
     put(join(u, 'splash-art/album.json'), { expectedCount: 3 })
     await expect(renderUniverseAlbums(u)).rejects.toThrow(/expects 3 scenes/)
   })
+
+  it('counts recorded base reviews instead of all expressions times all outfits', async () => {
+    const { u } = universe(), file = join(u, 'dialogue-portraits/manifest.json')
+    const manifest = JSON.parse(readFileSync(file, 'utf8'))
+    manifest.assets[0].outputs = []
+    manifest.expressions.push('tender')
+    put(file, manifest)
+    const pages = await renderUniverseAlbums(u)
+    expect(pages[1].html).toContain('<strong>3 states</strong> · 2 outfits')
+    for (const [, script] of pages[1].html.matchAll(/<script>([\s\S]*?)<\/script>/g)) expect(() => new Script(script)).not.toThrow()
+  })
 })
 
 describe('a character’s own album', () => {
@@ -144,7 +155,7 @@ describe('a character’s own album', () => {
     expect(page.html).toContain("['gala'].includes(asset.outfit)")
     expect(page.html).toContain("el(side+'-image').alt='Rider Three · '")
     expect(page.html).toContain('<footer>41 files kept</footer>')
-    expect(page.html).toContain('All three expressions for this outfit')
+    expect(page.html).toContain('Recorded expression reviews for this outfit')
     expect(page.html).not.toContain('id="tab-splash"')
   })
 })
