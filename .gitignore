@@ -17,3 +17,7 @@
 *.svg
 *.tiff
 *.psd
+
+# Owner-authorized original, character-free Farm scene studies.
+!assets/farm-life/scene-studies/v001/fireplace-sofa.png
+!assets/farm-life/scene-studies/v001/bedroom.png
