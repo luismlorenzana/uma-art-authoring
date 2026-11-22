@@ -180,12 +180,12 @@ export function parseEnemyIndex(source: string | null, game: string): EnemyIndex
   return value as unknown as EnemyIndex
 }
 
-/** `--only` names an enemy look by its id, its faction, or its enemy's name (`red-one` for "Red One"). */
-export type EnemySelection = ((look: { id: string; faction: string; character: string }) => boolean) | undefined
+/** `--only` names an enemy look by its id, its stable unit id, its faction, or its enemy's name (`red-one` for "Red One"). */
+export type EnemySelection = ((look: { id: string; faction: string; character: string; unitId?: string | null }) => boolean) | undefined
 export const enemySelection = (names: readonly string[]): EnemySelection => {
   if (names.length === 0) return undefined
   const wanted = new Set(names)
-  return (look) => wanted.has(look.id) || wanted.has(look.faction) || wanted.has(keyOf(look.character))
+  return (look) => wanted.has(look.id) || (look.unitId != null && wanted.has(look.unitId)) || wanted.has(look.faction) || wanted.has(keyOf(look.character))
 }
 
 export interface EnemyPlan {
@@ -201,7 +201,7 @@ export interface EnemyPlan {
 
 /** What a push sends, as `art:push` plans a universe's looks: a look published with the same picture keeps its date. */
 export function planEnemyPush(collection: EnemyCollection, remote: EnemyIndex | null, now: string, select?: EnemySelection): EnemyPlan {
-  const chosen = (look: { id: string; faction: string; character: string }) => !select || select(look)
+  const chosen = (look: { id: string; faction: string; character: string; unitId?: string | null }) => !select || select(look)
   const before = new Map((remote?.looks ?? []).map((l) => [l.id, l]))
   const damaged = new Set(collection.refused.filter((r) => r.kind === 'damaged').map((r) => r.id))
   const upload: ApprovedEnemy[] = [], looks: PublishedEnemy[] = [], listed = new Set<string>()
@@ -332,7 +332,7 @@ export function pushEnemies(universe: string, dir: string, mirrorDir: string, re
   const only = options.only ?? []
   if (only.length) {
     const known = [...collection.looks, ...(before?.looks ?? [])]
-    const unknown = only.filter((name) => !known.some((l) => l.id === name || l.faction === name || keyOf(l.character) === name))
+    const unknown = only.filter((name) => !known.some((l) => l.id === name || l.unitId === name || l.faction === name || keyOf(l.character) === name))
     if (unknown.length) throw new Error(`${universe}: --only names no approved or published enemy look: ${unknown.join(', ')}.`)
   }
   const plan = planEnemyPush(collection, before, now, enemySelection(only))
