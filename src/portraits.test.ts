@@ -74,6 +74,30 @@ function fakeRemote() {
 const T1 = '2026-01-03T10:00:00.000Z', T2 = '2026-01-04T10:00:00.000Z'
 
 describe('the approved dialogue portraits', () => {
+  it('publishes approved sparse Cyberpunk RGBA hashes while preserving legacy PNG and Farm semantics', () => {
+    const { dir } = collection()
+    const file = join(dir, 'approval.json'), approval = JSON.parse(readFileSync(file, 'utf8'))
+    for (const entry of approval.assets) for (const output of entry.outputs) {
+      output.rgbaSha256 = output.sha256
+      delete output.sha256
+    }
+    writeFileSync(file, JSON.stringify(approval))
+    const set = readPortraits('cyberpunk', dir)
+    expect(set.problems).toEqual([])
+    expect(set.states.find(state => state.expression === 'happy')).toMatchObject({
+      approvedSha256: approval.assets[0].outputs[0].rgbaSha256, approvedHashKind: 'rgba',
+    })
+    const published = planPortraits(set, null, T1).index
+    expect(published.states.filter(state => state.face)).toHaveLength(8)
+    expect(readPortraits('farm-life', dir).states.find(state => state.face)?.approvedSha256).toBeNull()
+    approval.assets[0].outputs[0].rgbaSha256 = 'not-approved'
+    writeFileSync(file, JSON.stringify(approval))
+    expect(readPortraits('cyberpunk', dir).problems).toContain('rider-one street happy: no approved composite hash')
+    const legacy = readPortraits('cyberpunk', collection().dir)
+    expect(legacy.problems).toEqual([])
+    expect(legacy.states.find(state => state.face)?.approvedHashKind).toBeUndefined()
+  })
+
   it('reads every crop and face the owner approved, and every state: the neutral crop, then each face at its place', () => {
     const { dir } = collection()
     const set = readPortraits('sky-city', dir)
