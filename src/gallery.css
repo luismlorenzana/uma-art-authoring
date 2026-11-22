@@ -71,6 +71,18 @@ input[type="search"] { width: min(19rem, 100%) }
 .baseline-link { display: inline-flex; gap: .6rem; margin-top: 1rem; padding: .6rem 0; text-decoration: underline; text-underline-offset: .22em; color: var(--accent) }
 .empty { margin: 0; padding: 1.1rem; border: 1px solid var(--line); background: #fff; border-radius: .7rem; color: var(--muted) }
 .missing { font-size: .85rem; color: var(--muted) }
+.duo-roster .entry-image { aspect-ratio: 1; height: auto; padding: 0 }
+.duo-roster .entry-image img { object-fit: cover }
+.duo-grid { display: grid; gap: 1.3rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) }
+.duo-card { border: 1px solid var(--line); border-radius: 1rem; background: #fff; overflow: hidden }
+.duo-card header { padding: 1rem }
+.duo-partner { display: flex; gap: .8rem; align-items: center }
+.duo-partner img { width: 64px; height: 64px; object-fit: cover; border-radius: .6rem }
+.duo-partner span { display: grid; gap: .2rem }
+.duo-partner small { color: var(--muted) }
+.duo-card .work-grid { display: block }
+.duo-card .work { border: 0; border-radius: 0 }
+.duo-empty { aspect-ratio: 16/9; display: grid; place-items: center; color: var(--muted); background: var(--wash) }
 @media (max-width: 570px) {
   .top-inner, main { width: calc(100% - 1.8rem) }
   .top-inner { gap: .4rem 1.15rem }

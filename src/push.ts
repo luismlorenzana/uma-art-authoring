@@ -52,6 +52,8 @@ function toMasterData(pushed: readonly string[]): void {
   }
 }
 function toCyberpunk(pushed: readonly string[], event: 'looks' | 'portraits' | 'enemies' | 'weapons' | 'combat-sprites'): void {
+  // Duo categories have their own participant contract; the game's existing looks event does not consume it.
+  if (category === 'duo-splash') return
   for (const universe of pushed) publishCyberpunkGame({ universe, event, only, dryRun, release, platformRoot: platform, contentRoot: content })
 }
 if (portraits) {
