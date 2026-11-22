@@ -9,7 +9,7 @@ const universeAt = process.argv.indexOf('--universe')
 const slug = universeAt < 0 ? 'farm-life' : process.argv[universeAt + 1]
 const universe = universes.find((entry) => entry.slug === slug)
 if (!universe) throw new Error('Choose a known universe for category folders.')
-const config = categoriesFor(universe.slug)
+const config = Object.fromEntries(Object.entries(categoriesFor(universe.slug)).filter(([key]) => key !== 'duo-splash'))
 if (!Object.keys(config).length) throw new Error('This universe has no additional character categories.')
 const roles = universe.slug === 'cyberpunk' ? ['characters', 'bosses', 'boss-allies', 'lieutenants'] as const : ['characters'] as const
 let created = 0

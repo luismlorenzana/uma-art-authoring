@@ -1,5 +1,6 @@
 /** Additional Farm collections, independent of the standard wardrobe and story scene set. */
 export const farmCategories = {
+  'duo-splash': { label: 'Duo Splash Art', kind: 'splash' },
   'pajama-outfits': { label: 'Pajama Outfits', kind: 'look' },
   'wedding-anniversary-outfits': { label: 'Wedding Anniversary Outfits', kind: 'look' },
   'pajama-splash': { label: 'Pajama Splash', kind: 'splash' },
@@ -7,6 +8,7 @@ export const farmCategories = {
 } as const
 
 export const cyberpunkCategories = {
+  'duo-splash': { label: 'Duo Splash Art', kind: 'splash' },
   weapons: { label: 'Weapons', kind: 'look' },
   'combat-sprites': { label: 'Combat Sprites', kind: 'look' },
 } as const

@@ -10,6 +10,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { FLAG_SCRIPT } from './flag.js'
 import { categoryFolder, artCategories, categoriesFor, supportsCategory, type ArtCategory } from './art-categories.js'
 import { authoring, content, SITE } from '../paths.mjs'
+import { DUO_CATEGORY, duoDocument, duoStudy, readDuoRoster, type DuoAttribution } from './duos.js'
 export { authoring, content, SITE } from '../paths.mjs'
 
 export const mirror = resolve(process.env.ART_DIR ?? resolve(content, 'published/art'))
@@ -47,6 +48,7 @@ export function pngSize(bytes: Uint8Array): { width: number; height: number } | 
 
 /** A look the owner approved, whose file is still the one approved. */
 export interface ApprovedLook {
+  duo?: DuoAttribution
   category?: ArtCategory
   id: string
   character: string
@@ -66,7 +68,7 @@ export interface ApprovedLook {
 }
 /** A look of the manifest that can't go out. `unapproved`: the owner hasn't approved it. `damaged`: the file or its entry
  *  isn't what was approved, so a copy published earlier stays as it is. */
-export interface RefusedLook { id: string; image: string | null; kind: 'unapproved' | 'damaged'; why: string; collection?: string; character?: string; category?: ArtCategory }
+export interface RefusedLook { id: string; image: string | null; kind: 'unapproved' | 'damaged'; why: string; collection?: string; character?: string; category?: ArtCategory; duo?: DuoAttribution }
 
 // --- a character's own collection (P174)
 
@@ -170,6 +172,7 @@ export function readCollection(universe: string, dir: string): Collection {
     }),
   ]
   for (const [category, config] of Object.entries(categoriesFor(universe)) as [ArtCategory, typeof artCategories[ArtCategory]][]) {
+    if (category === DUO_CATEGORY) continue
     const root = resolve(dir, '..', categoryFolder(category)), approved = join(root, 'approved')
     const categoryManifest = existsSync(join(approved, MANIFEST)) ? JSON.parse(readFileSync(join(approved, MANIFEST), 'utf8')) as unknown : null
     const shared = object(categoryManifest) && Array.isArray(categoryManifest.assets) ? categoryManifest.assets as unknown[] : []
@@ -193,16 +196,35 @@ export function readCollection(universe: string, dir: string): Collection {
       append(Array.isArray(assets) ? assets as unknown[] : [], study.folder, study.versionDir, study.name)
     }
   }
+  const universeDir = resolve(dir, '..'), duoRoster = readDuoRoster(universeDir)
+  for (const pair of duoRoster?.pairs ?? []) {
+    const members = pair.members.map(id => duoRoster!.members.find(member => member.id === id)!)
+    const owner = members.find(member => member.id === pair.owner && member.role === 'character')
+    if (!owner) throw new Error('A duo splash needs a character owner.')
+    const study = duoStudy(universeDir, pair), pointer = duoDocument(join(study.folder, 'active-study.json'))
+    const approvedVersion = pointer.ownerApproved === true
+    const selectedDir = approvedVersion ? study.versionDir : study.folder
+    const manifest = duoDocument(join(selectedDir, MANIFEST))
+    for (const asset of (Array.isArray(manifest.assets) ? manifest.assets : []).filter(object)) {
+      const own = text(asset.id)
+      sources.push({ asset: { ...asset, character: owner.name, outfit: text(asset.outfit) ?? 'duo', duo: { id: pair.id, members } },
+        category: DUO_CATEGORY, kind: 'splash', collection: `categories/${DUO_CATEGORY}/pairs/${pair.id}`,
+        id: own ? `duo-${pair.id}-${own}` : undefined,
+        locate: image => { const file = studyFile({ folder: study.folder, versionDir: selectedDir }, image); return file ? slashed(relative(dir, file)) : null } })
+    }
+  }
   for (const { asset, collection, kind, category, id: named, locate } of sources) {
     if (!object(asset)) continue
     const id = named ?? text(asset.id) ?? '(no id)', given = text(asset.image), image = locate(given), who = text(asset.character)
-    const refuse = (kind: RefusedLook['kind'], why: string) => { refused.push({ id, image: image ?? given, kind, why, ...(collection ? { collection } : {}), ...(who ? { character: who } : {}), ...(category ? { category } : {}) }) }
+    const duo = category === DUO_CATEGORY ? asset.duo as DuoAttribution : undefined
+    const refuse = (kind: RefusedLook['kind'], why: string) => { refused.push({ id, image: image ?? given, kind, why, ...(collection ? { collection } : {}), ...(who ? { character: who } : {}), ...(category ? { category } : {}), ...(duo ? { duo } : {}) }) }
     if (!KEBAB.test(id) || id.length > (category ? 160 : 80)) { refuse('damaged', 'its id isn’t a lowercase name joined by hyphens'); continue }
     if (seen.has(id)) { refuse('damaged', 'its id is listed twice'); continue }
     seen.add(id)
     order.push(id)
     const approval = object(asset.approval) ? asset.approval : {}
     if (approval.status !== 'approved' || approval.by !== 'owner') { refuse('unapproved', 'the owner hasn’t approved it'); continue }
+    if (duo && !/^\d{4}-\d{2}-\d{2}$/.test(text(approval.on) ?? text(approval.date) ?? '')) { refuse('damaged', 'a duo splash needs dated owner approval'); continue }
     const character = text(asset.character), outfit = text(asset.outfit), hash = text(asset.sha256)
     if (!character || !outfit || !hash || !/^[a-f0-9]{64}$/.test(hash)) { refuse('damaged', 'its entry has no character, outfit or SHA-256'); continue }
     if (!image) { refuse('damaged', kind ? 'its image isn’t a PNG inside the splash art folder' : collection ? 'its image isn’t a PNG inside her folder' : 'its image isn’t a PNG inside the approved folder'); continue }
@@ -215,6 +237,7 @@ export function readCollection(universe: string, dir: string): Collection {
     looks.push({
       id, character, outfit, title: text(asset.title) ?? words(outfit), image, bytes: bytes.byteLength, sha256: hash,
       width: size.width, height: size.height, approvedOn: text(approval.on) ?? text(approval.date), ...(collection ? { collection } : {}), ...(kind ? { kind } : {}), ...(category ? { category } : {}),
+      ...(duo ? { duo } : {}),
     })
   }
   return {
@@ -227,6 +250,7 @@ export function readCollection(universe: string, dir: string): Collection {
 
 /** A published look: the approved PNG byte for byte, under a name that carries its hash. */
 export interface PublishedLook {
+  duo?: DuoAttribution
   category?: ArtCategory
   id: string
   character: string
@@ -276,12 +300,12 @@ export interface PushPlan {
   same: boolean
 }
 /** Which looks a push may change, by id, outfit or character (`--only`); without one, every look. */
-export type Selection = ((look: { id: string; outfit: string; character: string; category?: ArtCategory }) => boolean) | undefined
+export type Selection = ((look: { id: string; outfit: string; character: string; category?: ArtCategory; duo?: DuoAttribution }) => boolean) | undefined
 /** `--only pilot-one-pajamas,pajamas-playful,pilot-two`: a look is chosen when its id, its outfit or her key is named. */
 export const selectionOf = (names: readonly string[]): Selection => {
   if (names.length === 0) return undefined
   const wanted = new Set(names)
-  return (look) => wanted.has(look.id) || wanted.has(look.outfit) || wanted.has(keyOf(look.character))
+  return (look) => wanted.has(look.id) || wanted.has(look.outfit) || wanted.has(keyOf(look.character)) || Boolean(look.duo && (wanted.has(look.duo.id) || look.duo.members.some(member => member.role === 'character' && (wanted.has(member.id) || wanted.has(member.key) || wanted.has(keyOf(member.name))))))
 }
 /** The characters this machine holds in a collection, by key: any look of hers is in the manifests, approved or not. */
 export const heldCharacters = (collection: Pick<Collection, 'looks' | 'refused'>): Set<string> =>
@@ -298,9 +322,11 @@ export const newest = (a: number | null, b: number | null | undefined): number |
  */
 export function planPush(collection: Collection, remote: UniverseIndex | null, now: string, select?: Selection): PushPlan {
   const held = heldCharacters(collection)
+  const heldDuos = new Set([...collection.looks, ...collection.refused].flatMap(look => look.duo ? [look.duo.id] : []))
   const categoryCharacters = new Set([...collection.looks, ...collection.refused].flatMap((look) =>
     look.category && look.character ? [look.category + '/' + keyOf(look.character)] : []))
-  const chosen = (look: { id: string; outfit: string; character: string; category?: ArtCategory }) => {
+  const chosen = (look: { id: string; outfit: string; character: string; category?: ArtCategory; duo?: DuoAttribution }) => {
+    if (look.duo && !heldDuos.has(look.duo.id)) return false
     if (select) return select(look)
     return look.category ? categoryCharacters.has(look.category + '/' + keyOf(look.character)) : held.has(keyOf(look.character))
   }
@@ -314,6 +340,7 @@ export function planPush(collection: Collection, remote: UniverseIndex | null, n
     looks.push({
       ...{ id: look.id, character: look.character, outfit: look.outfit, title: look.title, path: publishedPath(look), bytes: look.bytes, sha256: look.sha256 }, ...(look.kind ? { kind: look.kind } : {}), ...(look.category ? { category: look.category } : {}),
       width: look.width, height: look.height, approvedOn: look.approvedOn, publishedAt: same ? old!.publishedAt : now,
+      ...(look.duo ? { duo: look.duo } : {}),
     })
   }
   const here = new Set(collection.looks.map((l) => l.id))
@@ -395,7 +422,7 @@ export function publicationOf(collection: Collection, remote: UniverseIndex | nu
     destination: `gs://${bucket}/art/universes/${collection.universe}/`, site: SITE, checkedAt: now,
     publishedAt: remote?.publishedAt ?? null, revision: collection.revision, counts, looks,
     // Only a character held here can lose a look; one whose folder is elsewhere stays as published (P189).
-    withdrawable: [...there.values()].filter((l) => !listed.has(l.id) && held.has(keyOf(l.character))).map((l) => l.id).sort(),
+    withdrawable: [...there.values()].filter((l) => !listed.has(l.id) && !l.duo && held.has(keyOf(l.character))).map((l) => l.id).sort(),
   }
 }
 
@@ -430,8 +457,8 @@ export function stable<T extends { checkedAt: string }>(file: string, next: T): 
   return before && JSON.stringify({ ...before, checkedAt: '' }) === JSON.stringify({ ...next, checkedAt: '' }) ? before : next
 }
 /** One collection's share of a publication record, its counts recounted; `image` re-expressed for its own pages. */
-export function sliceOf(publication: Publication, collection: string | null, image: (path: string) => string = (p) => p, noun?: string): Publication {
-  const looks = publication.looks.filter((l) => (l.collection ?? null) === collection).map((l) => ({ ...l, image: l.image === null ? null : image(l.image) }))
+export function sliceOf(publication: Publication, collection: string | null, image: (path: string) => string = (p) => p, noun?: string, descendants = false): Publication {
+  const looks = publication.looks.filter((l) => (l.collection ?? null) === collection || Boolean(descendants && collection && l.collection?.startsWith(collection + '/'))).map((l) => ({ ...l, image: l.image === null ? null : image(l.image) }))
   const counts: Record<LookState, number> = { published: 0, changed: 0, unpublished: 0, refused: 0 }
   for (const l of looks) counts[l.state]++
   // Withdrawals are the universe's, so they stay on the approved folder's record.
@@ -471,7 +498,7 @@ export function writeFlags(dir: string, publication: Publication): string[] {
   }
   for (const category of Object.keys(categoriesFor(publication.universe)) as ArtCategory[]) {
     const collection = categoryFolder(category), categoryDir = resolve(dir, '..', collection, 'approved')
-    const mine = sliceOf(publication, collection, (p) => slashed(relative(categoryDir, resolve(dir, p))))
+    const mine = sliceOf(publication, collection, (p) => slashed(relative(categoryDir, resolve(dir, p))), undefined, category === DUO_CATEGORY)
     if (!mine.looks.length && !existsSync(join(categoryDir, RECORD))) continue
     const record = stable(join(categoryDir, RECORD), mine), at = slashed(relative(dir, categoryDir))
     if (write(join(categoryDir, RECORD), encode(record))) changed.push(`${at}/${RECORD}`)
@@ -569,7 +596,7 @@ export function push(universe: string, dir: string, mirrorDir: string, remote: R
   if (only.length) {
     // A name that matches nothing is a typo: say so before anything moves.
     const known = [...collection.looks, ...(before?.looks ?? [])].filter((look) => !options.category || look.category === options.category)
-    const unknown = only.filter((name) => !known.some((l) => l.id === name || l.outfit === name || keyOf(l.character) === name))
+    const unknown = only.filter((name) => !known.some((look) => selectionOf([name])!(look)))
     if (unknown.length) throw new Error(`${universe}: --only names no approved or published look: ${unknown.join(', ')}.`)
   }
   const selected = selectionOf(only)

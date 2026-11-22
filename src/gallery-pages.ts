@@ -1,5 +1,7 @@
 import { artTypes, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work } from './gallery-data.js'
 import { artCategories, categoriesFor, isArtCategory, supportsCategory, type ArtCategory } from './art-categories.js'
+import { duoLibrary } from './gallery-duos.js'
+import type { DuoMember } from './duos.js'
 
 const html = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
 const urlFor = (universe: Universe, type?: ArtType, id?: string) =>
@@ -53,6 +55,10 @@ function universePage(mounts: Mounts, u: Universe) {
     return tile({ label: artTypes[kind].label, detail: `${people.length} in the cast`, to: urlFor(u, kind), accent: u.accent,
       image: first ? lib.files(first)[0]?.url ?? lib.baseline(first) : '' })
   })
+  if (u.slug === 'farm-life') {
+    const duos = duoLibrary(mounts, u), first = duos.members[0]
+    tiles.push(tile({ label: 'Duos', detail: `${duos.members.length} characters · ${duos.roster?.pairs.length ?? 0} shared pairs`, to: urlFor(u) + '/duos', accent: u.accent, image: first ? duos.profile(first) : '' }))
+  }
   return frame(u.title, [{ label: u.title }], headline(u.title) + `<div class="tiles">${tiles.join('')}</div>`, u.accent)
 }
 
@@ -76,6 +82,32 @@ function listPage(mounts: Mounts, u: Universe, type: ArtType, roster: Entry[]) {
 const tabs = { art: 'Character Art', expressions: 'Facial Expressions', splash: 'Splash Art' } as const
 type Tab = keyof typeof tabs | ArtCategory
 
+function duoPanel(mounts: Mounts, u: Universe, key: string) {
+  const lib = duoLibrary(mounts, u), member = lib.members.find(item => item.key === key)
+  if (!member || !lib.roster) return '<p class="empty">No duo pairings yet.</p>'
+  return `<div class="duo-grid">${lib.pairsFor(member).map(pair => {
+    const partner = lib.roster!.members.find(item => pair.members.includes(item.id) && item.id !== member.id)!
+    const files = lib.works(pair), photo = lib.profile(partner)
+    const partnerURL = partner.role === 'character' ? urlFor(u, 'characters', partner.key) + '?view=duo-splash' : urlFor(u, 'boss-allies', libEntryId(mounts, u, partner))
+    return `<article class="duo-card" data-duo="${html(pair.id)}"><header><a class="duo-partner" href="${partnerURL}">${cover(photo, partner.name)}<span><strong>With ${html(partner.name)}</strong><small>${files[0]?.status ?? 'Not authored yet'}</small></span></a></header>${files.length ? `<div class="splash">${artGrid(files)}</div>` : '<div class="duo-empty">Duo splash not authored yet.</div>'}</article>`
+  }).join('')}</div>`
+}
+
+function libEntryId(mounts: Mounts, u: Universe, member: DuoMember) {
+  return entries(mounts, u, 'boss-allies').find(entry => entry.id === member.id.slice('ally-'.length))?.id ?? ''
+}
+
+function duoListPage(mounts: Mounts, u: Universe, key?: string) {
+  const lib = duoLibrary(mounts, u)
+  if (key) {
+    const member = lib.members.find(item => item.key === key)
+    if (!member) return null
+    return frame(member.name + ' · Duos', [{ label: u.title, href: urlFor(u) }, { label: 'Duos', href: urlFor(u) + '/duos' }, { label: member.name }], headline(member.name, `${lib.pairsFor(member).length} duo partners`) + duoPanel(mounts, u, key), u.accent)
+  }
+  const body = `<div class="list-tools"><label for="search">Find a character</label><input id="search" type="search" autocomplete="off"><span id="search-count" role="status">${lib.members.length} results</span></div><section class="tier"><div class="cast-grid duo-roster">${lib.members.map(member => `<a class="entry" data-entry data-search="${html(member.name + ' ' + member.tier)}" href="${urlFor(u)}/duos/${encodeURIComponent(member.key)}"><div class="entry-image">${cover(lib.profile(member), member.name)}</div><div class="entry-text"><strong>${html(member.name)}</strong><span>${lib.pairsFor(member).length} duo partners</span></div></a>`).join('')}</div></section><p class="empty" id="no-results" hidden>No matching entries.</p>`
+  return frame('Duos', [{ label: u.title, href: urlFor(u) }, { label: 'Duos' }], headline('Duos', `${lib.members.length} characters · ${lib.roster?.pairs.length ?? 0} shared splashes`) + body, u.accent, 'gallery.mjs')
+}
+
 function portraitPanel(mounts: Mounts, u: Universe, type: ArtType, entry: Entry) {
   const sets = library(mounts, u, type).portraits(entry)
   if (!sets.length) return '<p class="empty">No facial expressions yet.</p>'
@@ -90,7 +122,7 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   const label = artTypes[type].label
   const extra = isArtCategory(tab) ? tab : undefined
   const sections: Readonly<Record<string, string>> = type === 'characters' || u.slug === 'cyberpunk'
-    ? { ...tabs, ...Object.fromEntries(Object.entries(categoriesFor(u.slug)).map(([key, value]) => [key, value.label])) }
+    ? { ...tabs, ...Object.fromEntries(Object.entries(categoriesFor(u.slug)).filter(([key]) => key !== 'duo-splash' || type === 'characters').map(([key, value]) => [key, value.label])) }
     : tabs
   const base = urlFor(u, type, entry.id)
   const nav = `<nav class="tabs" aria-label="Album sections">${Object.entries(sections).map(([value, name]) =>
@@ -102,6 +134,7 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   const baseline = tab === 'art' ? lib.baseline(entry) : ''
   let panel = files.length ? artGrid(files) : `<p class="empty">${extra ? 'No art in this collection yet.' : 'No splash art yet.'}</p>`
   if (tab === 'expressions') panel = portraitPanel(mounts, u, type, entry)
+  if (tab === 'duo-splash') panel = duoPanel(mounts, u, entry.key)
   if (tab === 'art') {
     const reference = baseline ? `<a class="baseline-link" href="${html(baseline)}" target="_blank" rel="noopener">Open full-body baseline ${chevron}</a>` : ''
     panel = files.length ? panel + reference : baseline
@@ -121,6 +154,7 @@ export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchP
   const universe = universes.find((item) => item.slug === slug)
   if (!universe) return null
   if (!list) return universePage(mounts, universe)
+  if (list === 'duos' && universe.slug === 'farm-life') return duoListPage(mounts, universe, id)
   const type = categories(mounts, universe).find((key) => key === list)
   if (!type) return null
   const roster = entries(mounts, universe, type)
@@ -128,7 +162,7 @@ export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchP
   const character = roster.find((item) => item.id === id)
   if (!character) return null
   const view = search.get('view')
-  const categoryView = (type === 'characters' || universe.slug === 'cyberpunk') && isArtCategory(view) && supportsCategory(universe.slug, view) ? view : undefined
+  const categoryView = (type === 'characters' || universe.slug === 'cyberpunk') && isArtCategory(view) && (view !== 'duo-splash' || type === 'characters') && supportsCategory(universe.slug, view) ? view : undefined
   const tab = categoryView ?? (view === 'expressions' || view === 'splash' ? view : 'art')
   return memberPage(mounts, universe, type, character, tab)
 }

@@ -24,7 +24,7 @@ export const artTypes = {
 
 export type Universe = typeof universes[number]
 export type ArtType = keyof typeof artTypes
-export type Mounts = Record<'work' | 'art' | 'enemy', string>
+export type Mounts = Record<'work' | 'art' | 'enemy', string> & { profiles?: string }
 type Row = Record<string, unknown>
 
 export interface Entry {
@@ -94,6 +94,7 @@ export function mediaFile(base: string, parts: string[]): string | null {
 function image(mounts: Mounts, location: Location, file: unknown) {
   if (typeof file !== 'string' || !file || isAbsolute(file) || file.includes(':')) return ''
   const root = mounts[location.mount]
+  if (!root) return ''
   const parts = relative(root, resolve(location.dir, file)).split(sep)
   return mediaFile(root, parts) ? `/_gallery/media/${location.mount}/${parts.map(encodeURIComponent).join('/')}` : ''
 }

@@ -2,7 +2,8 @@
 import { createServer } from 'node:http'
 import { createReadStream } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { authoring } from '../paths.mjs'
+import { authoring, platformContent } from '../paths.mjs'
+import { join } from 'node:path'
 import { enemyMirror } from './enemies.js'
 import { mirror } from './lib.js'
 import { fileFor, typeOf } from './gallery-lib.js'
@@ -10,7 +11,7 @@ import { artTypes, mediaFile, universes, type Mounts } from './gallery-data.js'
 import { galleryPage } from './gallery-pages.js'
 import { isArtCategory, supportsCategory } from './art-categories.js'
 
-const mounts: Mounts = { work: authoring, art: mirror, enemy: enemyMirror }
+const mounts: Mounts = { work: authoring, art: mirror, enemy: enemyMirror, profiles: process.env.UMA_PROFILE_RELEASE_DIR ?? join(platformContent, 'release') }
 const assets: Readonly<Record<string, string>> = {
   '/_gallery/style.css': fileURLToPath(new URL('./gallery.css', import.meta.url)),
   '/_gallery/gallery.mjs': fileURLToPath(new URL('./gallery.mjs', import.meta.url)),
@@ -71,7 +72,8 @@ createServer((req, res) => {
     if (Object.hasOwn(assets, pathname)) return serve(assets[pathname]!)
     if (pathname.startsWith('/_gallery/media/')) {
       const [, , , mount, ...parts] = pathname.split('/').map(decodeURIComponent)
-      const file = mount && Object.hasOwn(mounts, mount) ? mediaFile(mounts[mount as keyof Mounts], parts) : null
+      const root = mount && Object.hasOwn(mounts, mount) ? mounts[mount as keyof Mounts] : undefined
+      const file = root ? mediaFile(root, parts) : null
       return file ? serve(file) : send(404, 'text/plain; charset=utf-8', 'Image not found')
     }
     const page = galleryPage(mounts, pathname, searchParams)

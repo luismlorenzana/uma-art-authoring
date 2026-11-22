@@ -89,7 +89,7 @@ it('adds Weapons and Combat Sprites to Cyberpunk crew albums with independent co
   expect(weapons).toContain('?view=weapons" aria-current="page">Weapons</a>')
   expect(weapons).toContain('weapon.png')
   expect(weapons).not.toContain('idle.png')
-  expect(weapons.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(5)
+  expect(weapons.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(6)
   const sprites = galleryPage(mounts, path, new URLSearchParams('view=combat-sprites'))!
   expect(sprites).toContain('?view=combat-sprites" aria-current="page">Combat Sprites</a>')
   expect(sprites).toContain('idle.png')
@@ -102,11 +102,12 @@ it('puts the four additional collections in each Farm character album and keeps 
   const { mounts, put } = fixture()
   const farm = galleryPage(mounts, '/gallery/farm-life', blank)!
   for (const [key, category] of Object.entries(farmCategories)) {
+    if (key === 'duo-splash') continue // Shared pairs use their own roster and manifests.
     expect(farm).not.toContain(category.label)
     for (const character of ['zoe-vale', 'amber-reed']) {
       const page = galleryPage(mounts, '/gallery/farm-life/characters/' + character, new URLSearchParams('view=' + key))!
       expect(page).toContain(`?view=${key}" aria-current="page">${category.label}</a>`)
-      expect(page.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(7)
+      expect(page.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(8)
       expect(page).toContain('No art in this collection yet.')
     }
   }
