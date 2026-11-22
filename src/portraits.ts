@@ -44,6 +44,8 @@ export interface PortraitState {
   at: { x: number; y: number } | null
   /** The approved flattened PNG's SHA-256, kept in private authoring: provenance, not a file the games get. */
   approvedSha256: string | null
+  /** Cyberpunk's sparse workflow approves composite RGBA pixels without a flattened PNG. */
+  approvedHashKind?: 'rgba'
 }
 /** The bucket's `art/universes/<universe>/portraits/index.json`: the pieces and the recipe. Paths are under `portraits/`. */
 export interface PortraitIndex {
@@ -182,7 +184,14 @@ export function readPortraits(universe: string, dir: string, only: readonly stri
           faces.set(faceId, face)
         } else if (face.sha256 !== output.faceSha256) { problems.push(`${what} ${expression}: approved with another ${expression} face`); continue }
         if (position.x < 0 || position.y < 0 || position.x + face.width > size.width || position.y + face.height > size.height) { problems.push(`${what} ${expression}: the face falls outside the crop`); continue }
-        states.push({ character, outfit, expression, base: id, face: faceId, at: position, approvedSha256: text(output.sha256) })
+        const rgbaHash = universe === 'cyberpunk' ? text(output.rgbaSha256) : null
+        const approvedSha256 = text(output.sha256) ?? rgbaHash
+        if (universe === 'cyberpunk' && (!approvedSha256 || !/^[a-f0-9]{64}$/.test(approvedSha256))) {
+          problems.push(`${what} ${expression}: no approved composite hash`)
+          continue
+        }
+        states.push({ character, outfit, expression, base: id, face: faceId, at: position, approvedSha256,
+          ...(!text(output.sha256) && rgbaHash ? { approvedHashKind: 'rgba' as const } : {}) })
       }
     }
   }
