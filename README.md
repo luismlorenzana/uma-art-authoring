@@ -23,6 +23,13 @@ using `weapons` or `combat-sprites`. They use the same approval manifest and
 Publish an approved crew selection with `pnpm run publish cyberpunk --category weapons --only <character-key> --dry-run`,
 or select `combat-sprites`. The published Character Art page groups these categories separately.
 
+The Cyberpunk Combat Sprites tab also plays versioned bundles for local review. Point an
+`active-bundle.json` containing `{"schemaVersion":1,"version":"v001"}` at a version's
+`bundle.json` and texture pages. The player checks the bundle, lets you select the fitting,
+direction and action, and shows frame timings and anchors. Check a version from this checkout
+with `node --import tsx src/check-combat-sprites.ts <version-folder>`. The local draft selection
+is independent of the still-image publishing command and its approval records.
+
 Enemy album studies use `cyberpunk/<role>/categories/<category>/characters/<unit-id>/vNNN/`,
 where `<role>` is `enemies`, `enemies/casual`, or `enemies/lieutenants`.
 Each version uses `fullBodyAssets` in its manifest. Curated selections can instead use

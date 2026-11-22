@@ -1,5 +1,6 @@
 import { artTypes, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work } from './gallery-data.js'
 import { artCategories, categoriesFor, isArtCategory, supportsCategory, type ArtCategory } from './art-categories.js'
+import { FACINGS, spriteAlbum } from './combat-sprites.js'
 import { duoLibrary } from './gallery-duos.js'
 import type { DuoMember } from './duos.js'
 
@@ -117,6 +118,46 @@ function portraitPanel(mounts: Mounts, u: Universe, type: ArtType, entry: Entry)
 <p id="expression-error" class="empty" role="status" hidden></p><script id="portrait-data" type="application/json">${JSON.stringify(sets).replace(/</g, '\\u003c')}</script>`
 }
 
+function combatSpritePanel(mounts: Mounts, entry: Entry): string {
+  try {
+    const data = spriteAlbum(mounts.work, entry.folder, entry.id)
+    if (!data) return ''
+    const { bundle } = data
+    const options = bundle.fittings.map((fitting, index) => '<option value="' + index + '">' + html(fitting.label) + '</option>').join('')
+    const facingLabels = { S: 'South · front', W: 'West · left', N: 'North · back', E: 'East · right' }
+    const directions = FACINGS.map(key => '<option value="' + key + '">' + facingLabels[key] + '</option>').join('')
+    const starter = bundle.reviewHeight
+    const state = bundle.status === 'draft' ? 'Draft bundle' : 'Approved bundle'
+    return `<section class="combat-sprite-player" aria-label="Combat sprite player" data-sprite-version="${html(bundle.version)}">
+      <p class="combat-sprite-version">${state} · ${html(bundle.version)}</p>
+      <div class="portrait-controls combat-sprite-controls">
+        <label>Fitting<select id="combat-sprite-fitting">${options}</select></label>
+        <label>Facing<select id="combat-sprite-facing">${directions}</select></label>
+        <label>Action<select id="combat-sprite-clip"><option value="idle">Idle</option></select></label>
+        <label>Size<select id="combat-sprite-height"><option value="${starter}">${starter} px · board</option><option value="${2 * bundle.figureHeight}">2× native</option></select></label>
+        <label>Speed<select id="combat-sprite-speed"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option></select></label>
+      </div>
+      <div class="combat-sprite-stage">
+        <canvas id="combat-sprite-canvas" role="img" aria-label="Selected combat sprite animation"></canvas>
+      </div>
+      <div class="combat-sprite-controls combat-sprite-transport">
+        <button type="button" id="combat-sprite-prev" disabled>Previous frame</button>
+        <button type="button" id="combat-sprite-play" disabled>Play</button>
+        <button type="button" id="combat-sprite-next" disabled>Next frame</button>
+        <label class="combat-sprite-scrub">Frame <input id="combat-sprite-frame" type="range" min="0" max="0" value="0" disabled></label>
+        <label><input id="combat-sprite-anchors" type="checkbox"> Show anchors</label>
+      </div>
+      <p id="combat-sprite-caption"></p>
+      <p id="combat-sprite-note" hidden></p>
+      <p id="combat-sprite-status" role="status"></p>
+      <script id="combat-sprite-data" type="application/json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>
+    </section>`
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown bundle error'
+    return '<p class="empty" role="status">Unable to play the selected bundle. ' + html(message) + '</p>'
+  }
+}
+
 function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, tab: Tab) {
   const lib = library(mounts, u, type)
   const label = artTypes[type].label
@@ -133,6 +174,10 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   const files = tab === 'expressions' ? [] : collection.files(subject, Boolean(splash))
   const baseline = tab === 'art' ? lib.baseline(entry) : ''
   let panel = files.length ? artGrid(files) : `<p class="empty">${extra ? 'No art in this collection yet.' : 'No splash art yet.'}</p>`
+  if (tab === 'combat-sprites' && u.slug === 'cyberpunk') {
+    const player = combatSpritePanel(mounts, subject)
+    if (player) panel = player + (files.length ? panel : '')
+  }
   if (tab === 'expressions') panel = portraitPanel(mounts, u, type, entry)
   if (tab === 'duo-splash') panel = duoPanel(mounts, u, entry.key)
   if (tab === 'art') {
@@ -144,7 +189,7 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   const context = [entry.tier, pairing(entry, type)].filter(Boolean).join(' · ')
   return frame(entry.name, [{ label: u.title, href: urlFor(u) }, { label, href: urlFor(u, type) }, { label: entry.name }],
     headline(entry.name, context) + nav + `<section class="${splash ? 'splash' : 'album'}" aria-label="${sections[tab]}">${panel}</section>`,
-    u.accent, tab === 'expressions' ? 'gallery.mjs' : undefined)
+    u.accent, tab === 'expressions' ? 'gallery.mjs' : tab === 'combat-sprites' ? 'combat-sprite-player.mjs' : undefined)
 }
 
 export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchParams) {
