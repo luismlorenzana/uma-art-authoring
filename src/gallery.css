@@ -94,3 +94,24 @@ input[type="search"] { width: min(19rem, 100%) }
   .portrait-grid { gap: .55rem }
 }
 @media (prefers-reduced-motion: reduce) { .tile, .entry { transition: none } }
+
+/* Animated Combat Sprites tab. Keep the board-size preview at its declared CSS height. */
+.combat-sprite-player { margin-block: 0 1.5rem; }
+.combat-sprite-version { margin: 0 0 .75rem; }
+.combat-sprite-controls { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; }
+.combat-sprite-controls label { min-width: 0; }
+.combat-sprite-controls select, .combat-sprite-controls button { min-height: 44px; }
+.combat-sprite-stage {
+  min-height: 192px; margin-block: 1rem; padding: .5rem;
+  display: grid; place-items: center; overflow: auto;
+  background: #1b2330; border: 1px solid #53627b; border-radius: .65rem;
+}
+.combat-sprite-stage canvas { display: block; height: auto; max-width: 100%; image-rendering: pixelated; }
+.combat-sprite-transport button {
+  font: inherit; padding: .45rem .85rem; border: 1px solid #647993;
+  border-radius: .4rem; background: #222d40; color: #f4f8ff; cursor: pointer;
+}
+.combat-sprite-transport button:disabled { opacity: .55; cursor: default; }
+.combat-sprite-scrub { display: flex; align-items: center; gap: .5rem; min-height: 44px; }
+.combat-sprite-scrub input { width: clamp(90px, 20vw, 240px); }
+.combat-sprite-player p:empty { display: none; }

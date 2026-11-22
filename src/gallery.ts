@@ -14,6 +14,7 @@ import { isArtCategory, supportsCategory } from './art-categories.js'
 const mounts: Mounts = { work: authoring, art: mirror, enemy: enemyMirror, profiles: process.env.UMA_PROFILE_RELEASE_DIR ?? join(platformContent, 'release') }
 const assets: Readonly<Record<string, string>> = {
   '/_gallery/style.css': fileURLToPath(new URL('./gallery.css', import.meta.url)),
+  '/_gallery/combat-sprite-player.mjs': fileURLToPath(new URL('./combat-sprite-player.mjs', import.meta.url)),
   '/_gallery/gallery.mjs': fileURLToPath(new URL('./gallery.mjs', import.meta.url)),
   '/_gallery/portrait-pixels.mjs': fileURLToPath(new URL('../albums/portrait-pixels.mjs', import.meta.url)),
 }
