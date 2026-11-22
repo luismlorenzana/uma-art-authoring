@@ -6,6 +6,7 @@ Run `pnpm duos --all` to prepare Farm's 75 shared pairs and Cyberpunk's 50 crew/
 private metadata. `pnpm duos --all --check` validates the preparation. The Farm Duos menu and character album tabs
 reference the existing authored profiles and save each pair's splash once. Cyberpunk's Duo Splash Art tab belongs
 to the crew character. Read the [authoring and publishing workflow](docs/duo-splash-authoring.md) before starting.
+Farm art sessions must follow the committed [Farm pairing register](docs/duo-splash-authoring.md#farm-pairing-register).
 
 Run `pnpm install` and `pnpm gallery` for the [Local Art Gallery](http://127.0.0.1:4323).
 Choose Uma Quest, Uma Farm, or Uma Cyberpunk, then choose an art type and open an album.
