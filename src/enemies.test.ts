@@ -57,6 +57,20 @@ const FOES: Foe[] = [
 ]
 
 describe('an approved enemy collection (EA1)', () => {
+  it('publishes by stable unit identity across renamed looks and keeps unrelated actors exact', () => {
+    const base = temp(), dir = collection(base, 'neon-city', FOES), remote = fakeRemote()
+    pushEnemies('neon-city', dir, join(base, 'mirror'), remote.remote, T1)
+    const unrelated = remote.index().looks.find(row => row.id === 'blue-one-station')
+    const file = join(dir, 'manifest.json'), manifest = JSON.parse(readFileSync(file, 'utf8'))
+    manifest.assets[0].id = 'red-one-current'
+    manifest.assets[0].character = 'Renamed Commander'
+    writeFileSync(file, JSON.stringify(manifest))
+    const result = pushEnemies('neon-city', dir, join(base, 'mirror'), remote.remote, T2, { only: ['unit-red-one-station'] })
+    expect(result.withdrawn).toContain('red-one-station')
+    expect(remote.index().looks.filter(row => row.unitId === 'unit-red-one-station').map(row => row.id)).toEqual(['red-one-current'])
+    expect(remote.index().looks.find(row => row.id === 'blue-one-station')).toEqual(unrelated)
+  })
+
   it('reads the owner-approved looks with their faction and the album’s words, and refuses the rest', () => {
     const base = temp(), dir = collection(base, 'neon-city', FOES)
     const c = readEnemies('neon-city', dir)
