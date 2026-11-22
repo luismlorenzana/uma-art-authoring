@@ -9,8 +9,10 @@ const rows = (value: unknown) => Array.isArray(value) ? value.map(object) : []
 
 function url(mounts: Mounts, mount: keyof Mounts, base: string, file: unknown) {
   if (typeof file !== 'string') return ''
-  const parts = relative(mounts[mount], join(base, file)).split(sep)
-  return mediaFile(mounts[mount], parts) ? `/_gallery/media/${mount}/${parts.map(encodeURIComponent).join('/')}` : ''
+  const root = mounts[mount]
+  if (!root) return ''
+  const parts = relative(root, join(base, file)).split(sep)
+  return mediaFile(root, parts) ? `/_gallery/media/${mount}/${parts.map(encodeURIComponent).join('/')}` : ''
 }
 
 export function duoLibrary(mounts: Mounts, universe: Universe) {
@@ -18,6 +20,9 @@ export function duoLibrary(mounts: Mounts, universe: Universe) {
   const characters = entries(mounts, universe, 'characters'), allies = universe.slug === 'cyberpunk' ? entries(mounts, universe, 'boss-allies') : []
   const publishedRoot = join(mounts.art, 'universes', universe.slug)
   const profileIndex = duoDocument(join(publishedRoot, 'profiles', 'index.json'))
+  const releaseRoot = universe.slug === 'farm-life' ? mounts.profiles : undefined
+  const releaseManifest = releaseRoot ? duoDocument(join(releaseRoot, 'manifest.json')) : {}
+  const releaseArt = releaseRoot && text(releaseManifest.art) ? duoDocument(join(releaseRoot, text(releaseManifest.art))) : {}
   function entry(member: DuoMember): Entry | undefined {
     return member.role === 'character' ? characters.find(item => item.key === member.key) : allies.find(item => item.id === member.id.slice('ally-'.length))
   }
@@ -30,6 +35,17 @@ export function duoLibrary(mounts: Mounts, universe: Universe) {
       // The profile publisher mirrors its own pack root, whose paths include profiles/.
       const image = url(mounts, 'art', join(base, 'profiles'), preferred?.path) || url(mounts, 'art', base, preferred?.path)
       if (image) return image
+      if (releaseRoot) {
+        const key = member.id.startsWith('s') ? `outfit:${member.outfitId}` : String(member.characterId)
+        const recipePath = object(releaseArt.dialoguePortraits)[key]
+        const recipe = typeof recipePath === 'string' ? duoDocument(join(releaseRoot, recipePath)) : {}
+        const bases = object(recipe.bases), spring = object(object(bases.spring).profile)
+        const candidates = [spring, ...Object.values(bases).map(base => object(object(base).profile))]
+        for (const profile of candidates) {
+          const existing = url(mounts, 'profiles', releaseRoot, profile.path)
+          if (existing) return existing
+        }
+      }
     }
     const own = entry(member)
     if (!own) return ''

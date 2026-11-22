@@ -11,7 +11,8 @@ Ally cast records: each of the ranked 50 crew members has one distinct mapped al
 paths and hashes. Cast names, mappings, briefs and approval records remain private under ignored `content/`.
 
 The Farm universe has a Duos menu with the 50 ranked characters. It references the existing local square profile
-library. An approved authored look is the fallback when a profile is unavailable; a missing authored image remains
+library, then the existing local Platform release's profile files when a mirror file is missing. Set
+`UMA_PROFILE_RELEASE_DIR` to override that release folder. An approved authored look is the fallback when a profile is unavailable; a missing authored image remains
 an empty slot. Character albums in both universes have a Duo Splash Art tab. Cyberpunk shows the pairing only in the
 crew member's album. Existing Boss Ally, Boss Enemy and Lieutenant tabs retain their existing scope.
 

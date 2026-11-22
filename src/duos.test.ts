@@ -105,3 +105,17 @@ it('publishes a single approved image with both members, selectable by either pa
   expect(damaged.refused[0]!.kind).toBe('damaged')
   expect(planPush(damaged, plan.index, '2026-01-04').withdrawn).toEqual([])
 })
+
+it('references an existing release profile when the publication mirror has only metadata, keeping sister identity distinct', () => {
+  const { root, mounts, put } = fixture()
+  mounts.profiles = join(root, 'release')
+  put(join(mounts.profiles, 'manifest.json'), { art: 'data/art.json' })
+  put(join(mounts.profiles, 'data/art.json'), { dialoguePortraits: { '9101': 'art/base.json', 'outfit:910102': 'art/sister.json' } })
+  put(join(mounts.profiles, 'art/base.json'), { bases: { spring: { profile: { path: 'art/base.webp' } } } })
+  put(join(mounts.profiles, 'art/sister.json'), { bases: { spring: { profile: { path: 'art/sister.webp' } } } })
+  put(join(mounts.profiles, 'art/base.webp'), 'invented base profile')
+  put(join(mounts.profiles, 'art/sister.webp'), 'invented sister profile')
+  const lib = duoLibrary(mounts, universes[1]!)
+  expect(lib.profile({ ...members[0]!, characterId: 9101 })).toContain('/profiles/art/base.webp')
+  expect(lib.profile({ ...members[1]!, characterId: 9101, outfitId: 910102 })).toContain('/profiles/art/sister.webp')
+})
