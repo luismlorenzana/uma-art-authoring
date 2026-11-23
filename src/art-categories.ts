@@ -1,5 +1,6 @@
 /** Additional Farm collections, independent of the standard wardrobe and story scene set. */
 export const farmCategories = {
+  'character-sprites': { label: 'Character Sprites', kind: 'look' },
   'duo-splash': { label: 'Duo Splash Art', kind: 'splash' },
   'pajama-outfits': { label: 'Pajama Outfits', kind: 'look' },
   'wedding-anniversary-outfits': { label: 'Wedding Anniversary Outfits', kind: 'look' },

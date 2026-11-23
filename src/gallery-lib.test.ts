@@ -98,7 +98,7 @@ it('adds Weapons and Combat Sprites to Cyberpunk crew albums with independent co
   expect(galleryPage(mounts, '/gallery/farm-life/characters/zoe-vale', blank)).not.toContain('?view=weapons')
 })
 
-it('puts the four additional collections in each Farm character album and keeps their art separate', () => {
+it('puts the additional collections in each Farm character album and keeps their art separate', () => {
   const { mounts, put } = fixture()
   const farm = galleryPage(mounts, '/gallery/farm-life', blank)!
   for (const [key, category] of Object.entries(farmCategories)) {
@@ -107,7 +107,7 @@ it('puts the four additional collections in each Farm character album and keeps 
     for (const character of ['zoe-vale', 'amber-reed']) {
       const page = galleryPage(mounts, '/gallery/farm-life/characters/' + character, new URLSearchParams('view=' + key))!
       expect(page).toContain(`?view=${key}" aria-current="page">${category.label}</a>`)
-      expect(page.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(8)
+      expect(page.match(/<nav class="tabs"[\s\S]*?<\/nav>/)?.[0].match(/<a /g)).toHaveLength(9)
       expect(page).toContain('No art in this collection yet.')
     }
   }
@@ -131,6 +131,22 @@ it('puts the four additional collections in each Farm character album and keeps 
   expect(extra).not.toContain('one.png')
   expect(galleryPage(mounts, '/gallery/farm-life/characters/zoe-vale', new URLSearchParams('view=splash'))).not.toContain('anniversary.png')
   expect(galleryPage(mounts, '/gallery/cyberpunk/pajama-outfits', blank)).toBeNull()
+})
+
+it('keeps Farm Character Sprites in its own tab and shows local and published sprites there', () => {
+  const { mounts, put } = fixture()
+  const path = '/gallery/farm-life/characters/zoe-vale'
+  put('work/farm-life/categories/character-sprites/characters/zoe-vale/v001/manifest.json', { fullBodyAssets: [{ id: 'idle', outfit: 'idle', image: 'idle.png' }] })
+  put('work/farm-life/categories/character-sprites/characters/zoe-vale/v001/idle.png')
+  put('art/universes/farm-life/index.json', { looks: [{ id: 'published-walk', character: 'Zoe & Vale', category: 'character-sprites', path: 'images/walk.png' }] })
+  put('art/universes/farm-life/images/walk.png')
+  const sprites = galleryPage(mounts, path, new URLSearchParams('view=character-sprites'))!
+  expect(sprites).toContain('?view=character-sprites" aria-current="page">Character Sprites</a>')
+  expect(sprites).toContain('v001/idle.png')
+  expect(sprites).toContain('images/walk.png')
+  expect(galleryPage(mounts, path, blank)).not.toContain('v001/idle.png')
+  expect(galleryPage(mounts, path, new URLSearchParams('view=splash'))).not.toContain('images/walk.png')
+  expect(galleryPage(mounts, '/gallery/cyberpunk', blank)).not.toContain('Character Sprites')
 })
 
 it('uses one album route for outfits, layered facial expressions, and splash art', () => {

@@ -14,7 +14,7 @@ vi.mock('./lib.js', () => ({ approvedDir: () => '/approved', authoring: '/author
 vi.mock('./enemies.js', () => ({ enemiesDir: () => '/enemies', enemyMirror: '/mirror', enemyPrefix: (u: string) => `enemy-art/${u}`,
   enemySlice: () => ({ counts: mocks.counts }), enemyUniverses: () => ['cyberpunk'], pushEnemies: mocks.enemy }))
 vi.mock('./portraits.js', () => ({ portraitsDir: () => '/portraits', portraitUniverses: () => ['cyberpunk', 'farm-life'], pushPortraits: () => mocks.result }))
-vi.mock('./art-categories.js', () => ({ isArtCategory: (v: string) => ['weapons', 'combat-sprites'].includes(v), supportsCategory: () => true }))
+vi.mock('./art-categories.js', () => ({ isArtCategory: (v: string) => ['weapons', 'combat-sprites', 'character-sprites'].includes(v), supportsCategory: () => true }))
 
 const original = process.argv
 async function run(args: string[]) {
@@ -39,6 +39,10 @@ describe('native publishing routes', () => {
   it('keeps Farm on its existing master-data release command', async () => {
     await run(['farm-life'])
     expect(mocks.master).toHaveBeenCalledWith(expect.any(String), ['-s', 'art:release', 'farm-life'], expect.any(Object))
+  })
+  it('publishes Farm Character Sprites without running the master-data release', async () => {
+    await run(['farm-life', '--category', 'character-sprites', '--only', 'resident-one'])
+    expect(mocks.master).not.toHaveBeenCalled()
   })
   it('does not invoke the game when Platform refuses damaged enemy art', async () => {
     mocks.enemy.mockReturnValueOnce({ ...mocks.result, refused: [{ kind: 'damaged', id: 'officer-one', why: 'changed hash' }] } as never)

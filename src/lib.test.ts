@@ -71,26 +71,26 @@ describe('the approved collection', () => {
     expect(bucket.index().looks.some(({ category }) => category === 'combat-sprites')).toBe(false)
     expect(() => push('cyberpunk', dir, temp(), bucket.remote, T2, { category: 'pajama-outfits' })).toThrow(/not supported/)
   })
-  it('publishes one extra Farm category with approval checks and preserves the other collections', () => {
+  it.each(['pajama-outfits', 'character-sprites'] as const)('publishes Farm %s with approval checks and preserves the other collections', (category) => {
     const base = temp()
     const dir = universe(base, 'farm-life', [{ id: 'rider-one-street', outfit: 'street' }])
     const bucket = fakeRemote()
     push('farm-life', dir, temp(), bucket.remote, T1)
     const original = bucket.index().looks[0]
-    const categoryDir = universe(join(base, 'farm-life/categories'), 'pajama-outfits', [
+    const categoryDir = universe(join(base, 'farm-life/categories'), category, [
       { id: 'first', outfit: 'soft-pajamas' },
       { id: 'draft', outfit: 'draft', approval: { status: 'pending' } },
     ])
     universe(join(base, 'farm-life/categories'), 'wedding-anniversary-splash', [
       { id: 'evening', outfit: 'celebration' },
     ])
-    const selected = push('farm-life', dir, temp(), bucket.remote, T2, { category: 'pajama-outfits' })
-    expect(selected.uploaded).toEqual(['pajama-outfits-rider-one-first'])
-    expect(selected.refused.map(({ id }) => id)).toEqual(['pajama-outfits-rider-one-draft'])
+    const selected = push('farm-life', dir, temp(), bucket.remote, T2, { category })
+    expect(selected.uploaded).toEqual([`${category}-rider-one-first`])
+    expect(selected.refused.map(({ id }) => id)).toEqual([`${category}-rider-one-draft`])
     expect(bucket.index().looks.find(({ id }) => id === original!.id)).toEqual(original)
-    expect(bucket.index().looks.find(({ category }) => category === 'pajama-outfits')).toMatchObject({ outfit: 'soft-pajamas' })
+    expect(bucket.index().looks.find(look => look.category === category)).toMatchObject({ outfit: 'soft-pajamas' })
     expect(bucket.index().looks.some(({ category }) => category === 'wedding-anniversary-splash')).toBe(false)
-    const published = bucket.index().looks.find(({ category }) => category === 'pajama-outfits')!
+    const published = bucket.index().looks.find(look => look.category === category)!
     const elsewhere = { ...published, id: 'elsewhere-pajamas', character: 'Rider Elsewhere' }
     const remote = { ...bucket.index(), looks: [...bucket.index().looks, elsewhere] }
     const body = Buffer.from(JSON.stringify(remote))
@@ -98,10 +98,10 @@ describe('the approved collection', () => {
     const file = join(temp(), 'index.json')
     writeFileSync(file, body)
     bucket.remote.uploadFile(file, INDEX, generation)
-    expect(push('farm-life', dir, temp(), bucket.remote, T3, { category: 'pajama-outfits' }).uploaded).toEqual([])
+    expect(push('farm-life', dir, temp(), bucket.remote, T3, { category }).uploaded).toEqual([])
     expect(bucket.index().looks.find(({ id }) => id === elsewhere.id)).toEqual(elsewhere)
     expect(JSON.parse(readFileSync(join(categoryDir, 'publication.json'), 'utf8')).counts).toMatchObject({ published: 1, refused: 1 })
-    rmSync(join(base, 'farm-life/categories/pajama-outfits'), { recursive: true })
+    rmSync(join(base, 'farm-life/categories', category), { recursive: true })
     push('farm-life', dir, temp(), bucket.remote, T3)
     expect(bucket.index().looks.find(({ id }) => id === published.id)).toEqual(published)
   })

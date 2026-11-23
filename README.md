@@ -1,5 +1,11 @@
 # Uma Art Authoring
 
+## Farm Character Sprites
+
+Farm character albums have a Character Sprites tab. Prepare all 50 private starter studies with
+`pnpm farm:categories --category character-sprites`, then validate with the same command plus `--check`.
+Read the [Character Sprites authoring and publishing guide](docs/farm-character-sprites.md) before starting.
+
 ## Duo Splash Art
 
 Run `pnpm duos --all` to prepare Farm's 75 shared pairs and Cyberpunk's 50 crew/Boss Ally pairs from their existing
