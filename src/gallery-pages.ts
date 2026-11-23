@@ -1,8 +1,9 @@
-import { artTypes, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work } from './gallery-data.js'
+import { artTypes, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work, type Portrait } from './gallery-data.js'
 import { artCategories, categoriesFor, isArtCategory, supportsCategory, type ArtCategory } from './art-categories.js'
 import { FACINGS, spriteAlbum } from './combat-sprites.js'
 import { duoLibrary } from './gallery-duos.js'
 import type { DuoMember } from './duos.js'
+import { originalCharacterFolder, originalCollections, originalEntry, originalPortraits, originalStudy, originalTabs, originalWorks, type OriginalTab } from './original-casts.js'
 
 const html = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
 const urlFor = (universe: Universe, type?: ArtType, id?: string) =>
@@ -60,6 +61,10 @@ function universePage(mounts: Mounts, u: Universe) {
     const duos = duoLibrary(mounts, u), first = duos.members[0]
     tiles.push(tile({ label: 'Duos', detail: `${duos.members.length} characters · ${duos.roster?.pairs.length ?? 0} shared pairs`, to: urlFor(u) + '/duos', accent: u.accent, image: first ? duos.profile(first) : '' }))
   }
+  for (const { folder, collection } of originalCollections(mounts.work, u.slug)) {
+    const first = collection.characters.flatMap(character => originalWorks(mounts, originalCharacterFolder(folder, character), 'art')).find(work => work.status === 'Approved')
+    tiles.push(tile({ label: collection.title, detail: [collection.subtitle, `${collection.characters.length} original characters`].filter(Boolean).join(' · '), to: urlFor(u) + '/originals/' + collection.id, accent: u.accent, image: first?.url ?? '' }))
+  }
   return frame(u.title, [{ label: u.title }], headline(u.title) + `<div class="tiles">${tiles.join('')}</div>`, u.accent)
 }
 
@@ -111,11 +116,70 @@ function duoListPage(mounts: Mounts, u: Universe, key?: string) {
 
 function portraitPanel(mounts: Mounts, u: Universe, type: ArtType, entry: Entry) {
   const sets = library(mounts, u, type).portraits(entry)
+  return portraitSetsPanel(sets)
+}
+
+function portraitSetsPanel(sets: Portrait[]) {
   if (!sets.length) return '<p class="empty">No facial expressions yet.</p>'
   return `<div class="portrait-controls"><label>Outfit<select id="outfit">${sets.map(({ label }, index) => `<option value="${index}">${html(label)}</option>`).join('')}</select></label><label>Expression<select id="expression"></select></label></div>
 <div class="portrait-grid"><figure class="work"><div class="work-image"><img id="neutral" alt="Neutral expression" src="${html(sets[0]!.base)}"></div><figcaption><strong>Neutral</strong></figcaption></figure>
 <figure class="work"><div class="work-image"><img id="expression-image" alt="Selected expression"><canvas id="expression-canvas" role="img" aria-label="Selected expression" hidden></canvas></div><figcaption><strong id="expression-label">Selected expression</strong></figcaption></figure></div>
 <p id="expression-error" class="empty" role="status" hidden></p><script id="portrait-data" type="application/json">${JSON.stringify(sets).replace(/</g, '\\u003c')}</script>`
+}
+
+function originalPage(mounts: Mounts, u: Universe, parts: string[], search: URLSearchParams): string | null {
+  const [collectionId, rankId, characterId, extra] = parts
+  if (!collectionId || extra !== undefined) return null
+  const found = originalCollections(mounts.work, u.slug).find(item => item.collection.id === collectionId)
+  if (!found) return null
+  const { folder, collection } = found, base = urlFor(u) + '/originals/' + collection.id
+  const crumbs: Crumb[] = [{ label: u.title, href: urlFor(u) }, { label: collection.title, href: base }]
+  if (!rankId) {
+    const tiles = collection.ranks.map(rank => {
+      const people = collection.characters.filter(character => character.rank === rank.id)
+      const coverArt = people.flatMap(character => originalWorks(mounts, originalCharacterFolder(folder, character), 'art')).find(work => work.status === 'Approved')
+      return tile({ label: rank.label, detail: `${people.length} ${people.length === 1 ? rank.singular.toLowerCase() : rank.label.toLowerCase()}`, to: base + '/' + rank.id, image: coverArt?.url ?? '', accent: u.accent })
+    })
+    return frame(collection.title, crumbs, headline(collection.title, [collection.subtitle, collection.description].filter(Boolean).join(' · ')) + `<div class="tiles">${tiles.join('')}</div>`, u.accent)
+  }
+  const rank = collection.ranks.find(item => item.id === rankId)
+  if (!rank) return null
+  crumbs.push({ label: rank.label, href: base + '/' + rank.id })
+  const people = collection.characters.filter(character => character.rank === rank.id)
+  if (!characterId) {
+    const sections = collection.courts.flatMap(court => {
+      const members = people.filter(character => character.court === court.id)
+      if (!members.length) return []
+      return [`<section class="tier" data-tier><h2>${html(court.title)}</h2>${court.description ? `<p>${html(court.description)}</p>` : ''}<div class="cast-grid">${members.map(character => {
+        const picture = originalWorks(mounts, originalCharacterFolder(folder, character), 'art').find(work => work.status === 'Approved')
+        const parent = collection.characters.find(item => item.id === character.serves)
+        return `<a class="entry" href="${base}/${rank.id}/${character.id}" data-entry data-search="${html([character.name, character.title, court.title, parent?.name].filter(Boolean).join(' '))}"><div class="entry-image">${cover(picture?.url ?? '', '')}</div><div class="entry-text"><strong>${html(character.name)}</strong>${character.title ? `<span>${html(character.title)}</span>` : ''}${parent ? `<span>Serves ${html(parent.name)}</span>` : ''}<span>${picture?.status ?? 'Not authored yet'}</span></div></a>`
+      }).join('')}</div></section>`]
+    }).join('')
+    const controls = `<div class="list-tools"><label for="search">Find a character</label><input id="search" type="search" autocomplete="off"><span id="search-count" role="status">${people.length} results</span></div>`
+    return frame(rank.label, crumbs, headline(rank.label, `${collection.title} · ${people.length} characters`) + controls + sections + '<p class="empty" id="no-results" hidden>No matching entries.</p>', u.accent, 'gallery.mjs')
+  }
+  const character = people.find(item => item.id === characterId)
+  if (!character) return null
+  const own = originalCharacterFolder(folder, character), court = collection.courts.find(item => item.id === character.court)!
+  const parent = collection.characters.find(item => item.id === character.serves)
+  crumbs.push({ label: character.name })
+  const requested = search.get('view'), tab: OriginalTab = requested && Object.hasOwn(originalTabs, requested) ? requested as OriginalTab : 'art'
+  const memberURL = base + '/' + rank.id + '/' + character.id
+  const nav = `<nav class="tabs" aria-label="Album sections">${Object.entries(originalTabs).map(([key, title]) => `<a href="${memberURL}${key === 'art' ? '' : '?view=' + key}"${key === tab ? ' aria-current="page"' : ''}>${title}</a>`).join('')}</nav>`
+  const files = originalWorks(mounts, own, tab)
+  let panel = files.length ? artGrid(files) : `<p class="empty">No ${html(originalTabs[tab].toLowerCase())} authored yet.</p>`
+  if (tab === 'expressions') {
+    const portraits = originalPortraits(mounts, own)
+    if (portraits.length) panel = portraitSetsPanel(portraits) + (files.length ? artGrid(files) : '')
+  }
+  if (tab === 'combat-sprites') {
+    const player = combatSpritePanel(mounts, { ...originalEntry(folder, collection, character), folder: originalStudy(own, tab).root })
+    if (player) panel = player + (files.length ? artGrid(files) : '')
+  }
+  const parentURL = parent ? `${base}/${parent.rank}/${parent.id}` : ''
+  const context = [character.title, rank.singular, court.title].filter(Boolean).join(' · ')
+  return frame(character.name, crumbs, headline(character.name, context) + (parent ? `<p>Serves <a href="${parentURL}">${html(parent.name)}</a></p>` : '') + nav + `<section class="${tab === 'splash' ? 'splash' : 'album'}" aria-label="${originalTabs[tab]}">${panel}</section>`, u.accent, tab === 'expressions' ? 'gallery.mjs' : tab === 'combat-sprites' ? 'combat-sprite-player.mjs' : undefined)
 }
 
 function combatSpritePanel(mounts: Mounts, entry: Entry): string {
@@ -194,10 +258,13 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
 
 export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchParams) {
   if (pathname === '/' || pathname === '/index.html') return homePage(mounts)
-  const [, prefix, slug, list, id, extra] = pathname.replace(/\/$/, '').split('/')
-  if (prefix !== 'gallery' || extra !== undefined) return null
+  const parts = pathname.replace(/\/$/, '').split('/')
+  const [, prefix, slug, list, id, extra] = parts
+  if (prefix !== 'gallery') return null
   const universe = universes.find((item) => item.slug === slug)
   if (!universe) return null
+  if (list === 'originals') return originalPage(mounts, universe, parts.slice(4), search)
+  if (extra !== undefined) return null
   if (!list) return universePage(mounts, universe)
   if (list === 'duos' && universe.slug === 'farm-life') return duoListPage(mounts, universe, id)
   const type = categories(mounts, universe).find((key) => key === list)
