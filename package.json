@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "originals": "node --import tsx tools/prepare-originals.ts",
     "duos": "node --import tsx tools/prepare-duos.ts",
     "gallery": "node --import tsx src/gallery.ts",
     "albums": "node albums/build.mjs",

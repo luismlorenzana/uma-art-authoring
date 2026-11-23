@@ -1,5 +1,13 @@
 # Uma Art Authoring
 
+## Original Cyberpunk characters
+
+Original races and other original casts have their own collection tile inside the universe, with rank lists,
+court groups and the standard five character album sections. They start with empty reference folders and use no
+Ranker or franchise baselines. Read the [original character workflow](docs/original-character-authoring.md).
+Prepare a private registry with `pnpm originals --universe cyberpunk --collection <collection-key>`; add `--check`
+to validate its hierarchy and starter files without writing or overwriting authoring work.
+
 ## Farm Character Sprites
 
 Farm character albums have a Character Sprites tab. Prepare all 50 private starter studies with
