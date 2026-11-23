@@ -14,6 +14,7 @@ export const artTypes = {
   bosses: { singular: 'Boss Enemy', label: 'Boss Enemy', folder: ['enemies'] },
   'boss-allies': { singular: 'Boss Ally', label: 'Boss Ally', folder: ['enemies', 'casual'] },
   lieutenants: { singular: 'Lieutenant', label: 'Lieutenants', folder: ['enemies', 'lieutenants'] },
+  'character-sprites': { singular: 'Character', label: artCategories['character-sprites'].label, folder: ['categories', 'character-sprites'] },
   'pajama-outfits': { singular: 'Character', label: artCategories['pajama-outfits'].label, folder: ['categories', 'pajama-outfits'] },
   'wedding-anniversary-outfits': { singular: 'Character', label: artCategories['wedding-anniversary-outfits'].label, folder: ['categories', 'wedding-anniversary-outfits'] },
   'pajama-splash': { singular: 'Character', label: artCategories['pajama-splash'].label, folder: ['categories', 'pajama-splash'] },
