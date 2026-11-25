@@ -29,7 +29,7 @@ describe('Cyberpunk publishing hook', () => {
       const cmd = cyberpunkPublishCommand({ ...options, event, dryRun: true })!
       expect(cmd.executable).toBe(process.execPath)
       expect(cmd.cwd).toBe(folder)
-      expect(cmd.args).toEqual(['--import', 'tsx', join(folder, 'scripts/art/cli.ts'), '--event', event, '--only', 'officer-one', '--dry-run'])
+      expect(cmd.args).toEqual(['--import', 'tsx', join(folder, 'scripts/art/cli.ts'), '--event', event, '--campaign', 'four-act', '--only', 'officer-one', '--dry-run'])
     }
   })
   it('uses the local shared-register handoff and reports partial delivery failures', () => {

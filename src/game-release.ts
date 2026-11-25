@@ -27,7 +27,7 @@ export function cyberpunkPublishCommand(options: GamePublishOptions): GamePublis
   const cwd = resolve(env.UMA_CYBERPUNK_ROOT ?? localRoot ?? resolve(options.platformRoot, '../uma-cyberpunk'))
   const script = resolve(cwd, 'scripts/art/cli.ts')
   if (!existsSync(script)) throw new Error(`Cyberpunk art reached Platform, but game publishing needs ${script}. Set UMA_CYBERPUNK_ROOT to the game checkout and retry its art:publish command.`)
-  return { executable: process.execPath, cwd, args: ['--import', 'tsx', script, '--event', options.event,
+  return { executable: process.execPath, cwd, args: ['--import', 'tsx', script, '--event', options.event, '--campaign', 'four-act',
     ...(options.only.length ? ['--only', options.only.join(',')] : []), ...(options.dryRun ? ['--dry-run'] : [])] }
 }
 
