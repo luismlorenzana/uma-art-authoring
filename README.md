@@ -1,5 +1,12 @@
 # Uma Art Authoring
 
+## Owner-private base and splash alternatives
+
+The [private-variant workflow](docs/private-art-variants.md) preserves existing image IDs. Agents must follow the
+no-access rules in `AGENTS.md` and `CLAUDE.md`; private images and related creative material must never be viewed
+or entered into agent context. `pnpm private-art` prepares normal references or publishes approved files opaquely
+to a separate feed. No unlock key is required. The normal gallery never previews private variants.
+
 ## Original Cyberpunk characters
 
 Original races and other original casts have their own collection tile inside the universe, with rank lists,

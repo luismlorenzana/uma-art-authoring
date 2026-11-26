@@ -3,6 +3,13 @@
 /.cache/
 /dist/
 /coverage/
+owner-private/
+owner-only/
+private-variants/
+private-art-outbox/
+*.private.*
+*.key
+*.pem
 .env*
 
 # Originals, drafts and generated media belong under /content/.

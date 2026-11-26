@@ -4,13 +4,14 @@
 // approval to each PNG's SHA-256. Nothing here reads a picture's pixels, and nothing it reads or writes goes in git.
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { FLAG_SCRIPT } from './flag.js'
 import { categoryFolder, artCategories, categoriesFor, supportsCategory, type ArtCategory } from './art-categories.js'
 import { authoring, content, SITE } from '../paths.mjs'
 import { DUO_CATEGORY, duoDocument, duoStudy, readDuoRoster, type DuoAttribution } from './duos.js'
+import { ownerPrivatePath } from './owner-private-boundary.js'
 export { authoring, content, SITE } from '../paths.mjs'
 
 export const mirror = resolve(process.env.ART_DIR ?? resolve(content, 'published/art'))
@@ -98,8 +99,9 @@ export function characterStudies(universeDir: string): CharacterStudy[] {
   if (!existsSync(root)) return []
   const out: CharacterStudy[] = []
   for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !KEBAB.test(entry.name)) continue
+    if (!entry.isDirectory() || !KEBAB.test(entry.name) || ownerPrivatePath(entry.name)) continue
     const folder = join(root, entry.name), activeFile = join(folder, 'active-study.json')
+    if (ownerPrivatePath(realpathSync(folder))) continue
     if (!existsSync(activeFile)) continue
     const active = JSON.parse(readFileSync(activeFile, 'utf8')) as unknown
     if (!object(active) || active.ownerApproved !== true || typeof active.activeVersion !== 'string' || !/^v\d{3}$/.test(active.activeVersion)) continue
@@ -116,8 +118,9 @@ export function characterStudies(universeDir: string): CharacterStudy[] {
 /** A PNG a study's manifest names, resolved from its version folder; null unless it stays inside the character's folder. */
 export function studyFile(study: Pick<CharacterStudy, 'folder' | 'versionDir'>, rel: unknown): string | null {
   const p = text(rel)
-  if (!p || !p.endsWith('.png')) return null
+  if (!p || !p.endsWith('.png') || ownerPrivatePath(p)) return null
   const abs = resolve(study.versionDir, p)
+  if (ownerPrivatePath(abs) || (existsSync(abs) && ownerPrivatePath(realpathSync(abs)))) return null
   return abs.startsWith(resolve(study.folder) + sep) ? abs : null
 }
 /** A path with forward slashes, as the galleries and the bucket write them. */
@@ -230,6 +233,7 @@ export function readCollection(universe: string, dir: string): Collection {
     if (!image) { refuse('damaged', kind ? 'its image isn’t a PNG inside the splash art folder' : collection ? 'its image isn’t a PNG inside her folder' : 'its image isn’t a PNG inside the approved folder'); continue }
     const path = join(dir, image)
     if (!existsSync(path)) { refuse('damaged', 'its PNG is missing'); continue }
+    if (ownerPrivatePath(image) || ownerPrivatePath(path) || ownerPrivatePath(realpathSync(path))) { refuse('damaged', 'private variants require the separate opaque publisher'); continue }
     const bytes = readFileSync(path)
     if (sha256(bytes) !== hash) { refuse('damaged', 'the PNG changed since it was approved'); continue }
     const size = pngSize(bytes)

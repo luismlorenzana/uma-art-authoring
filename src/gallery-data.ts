@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { keyOf } from './lib.js'
 import { categoryFolder, artCategories, isArtCategory, type ArtCategory } from './art-categories.js'
+import { ownerPrivatePath } from './owner-private-boundary.js'
 
 export const universes = [
   { slug: 'high-fantasy', title: 'Uma Quest', accent: 'quest' },
@@ -83,12 +84,13 @@ function contained(base: string, destination: string) {
 
 /** Resolve both the spelling and the real file before serving it. */
 export function mediaFile(base: string, parts: string[]): string | null {
+  if (ownerPrivatePath(parts.join('/'))) return null
   if (!parts.length || parts.some((part) => !part || part.startsWith('.') || /[/\\:\0]/.test(part))) return null
   const target = resolve(base, ...parts)
   if (!imageFile.test(target)) return null
   try {
     const actual = realpathSync(target)
-    return contained(realpathSync(base), actual) && statSync(actual).isFile() ? actual : null
+    return !ownerPrivatePath(actual) && contained(realpathSync(base), actual) && statSync(actual).isFile() ? actual : null
   } catch { return null }
 }
 

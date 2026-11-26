@@ -8,6 +8,8 @@
     "node": ">=22"
   },
   "scripts": {
+    "private-art": "node --import tsx tools/private-art.ts",
+    "private-art:owner": "node --import tsx tools/private-art-owner.ts",
     "originals": "node --import tsx tools/prepare-originals.ts",
     "duos": "node --import tsx tools/prepare-duos.ts",
     "gallery": "node --import tsx src/gallery.ts",

@@ -1,5 +1,6 @@
 import { existsSync, realpathSync, statSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
+import { ownerPrivatePath } from './owner-private-boundary.js'
 
 const TYPES: Readonly<Record<string, string>> = {
   html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', json: 'application/json; charset=utf-8',
@@ -12,11 +13,11 @@ export function fileFor(base: string, urlPath: string): string | null {
   let path: string
   try { path = decodeURIComponent(urlPath.split('?')[0]!.split('#')[0]!) } catch { return null }
   const parts = path.split('/').filter((p) => p !== '')
-  if (parts.length === 0 || parts.some((p) => p === '..' || p.startsWith('.') || p.includes('\\') || p.includes(':'))) return null
+  if (parts.length === 0 || ownerPrivatePath(parts.join('/')) || parts.some((p) => p === '..' || p.startsWith('.') || p.includes('\\') || p.includes(':'))) return null
   const root = resolve(base), file = resolve(root, ...parts)
   if (!file.startsWith(root + sep) || !existsSync(file)) return null
   try {
     const actual = realpathSync(file)
-    return actual.startsWith(realpathSync(root) + sep) && statSync(actual).isFile() ? actual : null
+    return !ownerPrivatePath(actual) && actual.startsWith(realpathSync(root) + sep) && statSync(actual).isFile() ? actual : null
   } catch { return null }
 }
