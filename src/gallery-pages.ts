@@ -1,4 +1,4 @@
-import { artTypes, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work, type Portrait } from './gallery-data.js'
+import { artTypes, artTypePresentation, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work, type Portrait } from './gallery-data.js'
 import { artCategories, categoriesFor, isArtCategory, supportsCategory, type ArtCategory } from './art-categories.js'
 import { FACINGS, spriteAlbum } from './combat-sprites.js'
 import { duoLibrary } from './gallery-duos.js'
@@ -33,9 +33,19 @@ function artGrid(files: Work[]) {
   return `<div class="work-grid">${files.map((file) => `<figure class="work"><a class="work-image" href="${html(file.url)}" target="_blank" rel="noopener">${cover(file.url, file.label)}</a><figcaption><strong>${html(file.label)}</strong><span>${html(file.status)}</span></figcaption></figure>`).join('')}</div>`
 }
 
-function pairing(entry: Entry, type: ArtType) {
+function pairing(entry: Entry, type: ArtType, universe?: Universe) {
+  if (universe?.slug === 'high-fantasy') {
+    const link = entry.relationships?.find(link => link.label === (type === 'characters' ? 'Human' : 'Uma'))
+    return link ? `${link.label} · ${link.name}` : ''
+  }
   if (!entry.opponent) return ''
   return (type === 'boss-allies' ? 'Paired with ' : 'Opposes ') + entry.opponent
+}
+
+function relationships(universe: Universe, entry: Entry) {
+  if (!entry.relationships?.length) return ''
+  return `<nav class="cast-relations" aria-label="Related cast">${entry.relationships.map(link =>
+    `<a href="${urlFor(universe, link.type, link.id)}"><span>${html(link.label)}</span> ${html(link.name)}</a>`).join('')}</nav>`
 }
 
 export function homePage(mounts: Mounts) {
@@ -54,7 +64,7 @@ function universePage(mounts: Mounts, u: Universe) {
     const people = entries(mounts, u, kind)
     const lib = library(mounts, u, kind)
     const first = people[0]
-    return tile({ label: artTypes[kind].label, detail: `${people.length} in the cast`, to: urlFor(u, kind), accent: u.accent,
+    return tile({ label: artTypePresentation(u, kind).label, detail: `${people.length} in the cast`, to: urlFor(u, kind), accent: u.accent,
       image: first ? lib.files(first)[0]?.url ?? lib.baseline(first) : '' })
   })
   if (u.slug === 'farm-life') {
@@ -74,11 +84,11 @@ function listPage(mounts: Mounts, u: Universe, type: ArtType, roster: Entry[]) {
   const sections = tiers.map((tier) => `<section class="tier" data-tier><h2>${html(tier || 'Cast')}</h2><div class="cast-grid">${roster.filter((item) => item.tier === tier).map((item) => {
     const first = lib.files(item)[0]
     const image = first?.url ?? lib.baseline(item)
-    const paired = pairing(item, type)
+    const paired = pairing(item, type, u)
     return `<a class="entry" href="${urlFor(u, type, item.id)}" data-entry data-search="${html([item.name, item.opponent ?? '', item.tier].join(' '))}"><div class="entry-image">${cover(image, '')}</div><div class="entry-text"><strong>${html(item.name)}</strong>${paired ? `<span>${html(paired)}</span>` : ''}<span>${first?.status ?? (image ? 'Baseline' : 'No image yet')}</span></div></a>`
   }).join('')}</div></section>`).join('')
-  const label = artTypes[type].label
-  const search = roster.length ? `<div class="list-tools"><label for="search">Find a ${artTypes[type].singular.toLowerCase()}</label><input id="search" type="search" autocomplete="off"><span id="search-count" role="status">${roster.length} results</span></div>` : ''
+  const label = artTypePresentation(u, type).label
+  const search = roster.length ? `<div class="list-tools"><label for="search">Find a ${artTypePresentation(u, type).singular.toLowerCase()}</label><input id="search" type="search" autocomplete="off"><span id="search-count" role="status">${roster.length} results</span></div>` : ''
   const heading = type === 'bosses' || type === 'boss-allies' ? `Cyberpunk ${label} Art` : label
   return frame(heading, [{ label: u.title, href: urlFor(u) }, { label }], headline(heading, `${roster.length} in the cast`) +
     search + (sections || '<p class="empty">No cast entries yet.</p>') + '<p class="empty" id="no-results" hidden>No matching entries.</p>',
@@ -224,7 +234,7 @@ function combatSpritePanel(mounts: Mounts, entry: Entry): string {
 
 function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, tab: Tab) {
   const lib = library(mounts, u, type)
-  const label = artTypes[type].label
+  const label = artTypePresentation(u, type).label
   const extra = isArtCategory(tab) ? tab : undefined
   const sections: Readonly<Record<string, string>> = type === 'characters' || u.slug === 'cyberpunk'
     ? { ...tabs, ...Object.fromEntries(Object.entries(categoriesFor(u.slug)).filter(([key]) => key !== 'duo-splash' || type === 'characters').map(([key, value]) => [key, value.label])) }
@@ -250,9 +260,9 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
       ? `<figure class="work single"><a class="work-image" href="${html(baseline)}" target="_blank" rel="noopener">${cover(baseline, entry.name + ' baseline')}</a><figcaption><strong>Full-body baseline</strong></figcaption></figure>`
       : '<p class="empty">No character art yet.</p>'
   }
-  const context = [entry.tier, pairing(entry, type)].filter(Boolean).join(' · ')
+  const context = [entry.tier, pairing(entry, type, u)].filter(Boolean).join(' · ')
   return frame(entry.name, [{ label: u.title, href: urlFor(u) }, { label, href: urlFor(u, type) }, { label: entry.name }],
-    headline(entry.name, context) + nav + `<section class="${splash ? 'splash' : 'album'}" aria-label="${sections[tab]}">${panel}</section>`,
+    headline(entry.name, context) + relationships(u, entry) + nav + `<section class="${splash ? 'splash' : 'album'}" aria-label="${sections[tab]}">${panel}</section>`,
     u.accent, tab === 'expressions' ? 'gallery.mjs' : tab === 'combat-sprites' ? 'combat-sprite-player.mjs' : undefined)
 }
 

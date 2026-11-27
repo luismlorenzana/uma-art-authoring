@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "quest:cast": "node --import tsx tools/prepare-quest-cast.ts",
     "private-art": "node --import tsx tools/private-art.ts",
     "private-art:owner": "node --import tsx tools/private-art-owner.ts",
     "originals": "node --import tsx tools/prepare-originals.ts",

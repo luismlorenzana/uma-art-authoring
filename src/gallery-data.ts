@@ -3,6 +3,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { keyOf } from './lib.js'
 import { categoryFolder, artCategories, isArtCategory, type ArtCategory } from './art-categories.js'
 import { ownerPrivatePath } from './owner-private-boundary.js'
+import { questLinks, type QuestLink } from './quest-authoring.js'
 
 export const universes = [
   { slug: 'high-fantasy', title: 'Uma Quest', accent: 'quest' },
@@ -26,6 +27,14 @@ export const artTypes = {
 
 export type Universe = typeof universes[number]
 export type ArtType = keyof typeof artTypes
+export function artTypePresentation(universe: Universe, type: ArtType) {
+  if (universe.slug === 'high-fantasy') {
+    if (type === 'characters') return { label: 'Umas', singular: 'Uma' }
+    if (type === 'bosses') return { label: 'Humans', singular: 'Human' }
+    if (type === 'lieutenants') return { label: 'Elves', singular: 'Elf' }
+  }
+  return artTypes[type]
+}
 export type Mounts = Record<'work' | 'art' | 'enemy', string> & { profiles?: string }
 type Row = Record<string, unknown>
 
@@ -37,6 +46,7 @@ export interface Entry {
   referenceFolder?: string
   tier: string
   opponent?: string
+  relationships?: QuestLink[]
 }
 
 export interface Work {
@@ -103,6 +113,13 @@ function image(mounts: Mounts, location: Location, file: unknown) {
 }
 
 export function entries(mounts: Mounts, universe: Universe, type: ArtType, category?: ArtCategory): Entry[] {
+  const result = rawEntries(mounts, universe, type, category)
+  if (universe.slug !== 'high-fantasy') return result
+  const root = join(mounts.work, universe.slug), relationships = doc(join(root, 'cast', 'relationships.json'))
+  return result.map(entry => ({ ...entry, relationships: questLinks(root, type, entry.id, relationships) }))
+}
+
+function rawEntries(mounts: Mounts, universe: Universe, type: ArtType, category?: ArtCategory): Entry[] {
   const root = join(mounts.work, universe.slug)
   if (category) {
     const role = type === 'characters' ? [] : artTypes[type].folder
@@ -132,6 +149,7 @@ export function entries(mounts: Mounts, universe: Universe, type: ArtType, categ
 }
 
 export function categories(mounts: Mounts, universe: Universe): ArtType[] {
+  if (universe.slug === 'high-fantasy') return ['characters', 'bosses', 'lieutenants']
   const root = join(mounts.work, universe.slug)
   return (Object.keys(artTypes) as ArtType[]).filter((type) =>
     isArtCategory(type) ? false

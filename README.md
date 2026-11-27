@@ -1,5 +1,12 @@
 # Uma Art Authoring
 
+## Quest: Umas, Humans and Elves
+
+Quest's [character-authoring workflow](docs/quest-character-authoring.md) uses the existing Uma roster and carries
+over its current Human/Elf groups from the source cast. `pnpm quest:cast` prepares the metadata, three album tabs
+and reciprocal relationship links. Approved pilot/base images are referenced in place; no image is copied or
+approved as Quest art. Use `--dry-run` to preview preparation and `--check` to validate it without writing.
+
 ## Owner-private base and splash alternatives
 
 The [private-variant workflow](docs/private-art-variants.md) preserves existing image IDs. Agents must follow the
