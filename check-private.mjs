@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
-const allowedRoot = new Set(['.gitignore', 'README.md', 'AGENTS.md', 'CLAUDE.md', 'package.json', 'pnpm-lock.yaml', 'tsconfig.json', 'vitest.config.ts', 'docs/private-art-variants.md',
+const allowedRoot = new Set(['.gitignore', 'README.md', 'AGENTS.md', 'CLAUDE.md', 'package.json', 'pnpm-lock.yaml', 'tsconfig.json', 'vitest.config.ts', 'docs/private-art-variants.md', 'docs/quest-character-authoring.md',
   'paths.mjs', 'workspace.mjs', 'hub.mjs', 'docs/authoring/farm-life-splash-art/beach-spec.json', 'docs/farm-life-publishing.md', 'docs/farm-life-expressions.md', 'docs/duo-splash-authoring.md', 'docs/farm-character-sprites.md', 'docs/original-character-authoring.md', 'check-private.mjs', '.github/workflows/ci.yml', '.claude/launch.json',
   // Owner-authorized original, character-free scene studies are listed individually.
   'docs/authoring/farm-life-splash-art/interior-scenes.md',
