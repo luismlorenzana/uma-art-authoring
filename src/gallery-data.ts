@@ -112,6 +112,16 @@ function image(mounts: Mounts, location: Location, file: unknown) {
   return mediaFile(root, parts) ? `/_gallery/media/${location.mount}/${parts.map(encodeURIComponent).join('/')}` : ''
 }
 
+/** Parent references are kept separate from authored expression/splash/sprite outputs. */
+export function albumInputReferences(mounts: Mounts, folder: string): Work[] {
+  const inputs = doc(join(folder, 'inputs.json'))
+  if (inputs.kind !== 'quest-album-inputs' || inputs.schemaVersion !== 1 || inputs.status !== 'approved-quest-base-ready') return []
+  return rows(inputs.bases).flatMap(base => {
+    const url = image(mounts, { mount: 'work', dir: folder }, base.image)
+    return url ? [{ label: title(str(base.outfit) || str(base.id)), url, status: 'Approved' as const }] : []
+  })
+}
+
 export function entries(mounts: Mounts, universe: Universe, type: ArtType, category?: ArtCategory): Entry[] {
   const result = rawEntries(mounts, universe, type, category)
   if (universe.slug !== 'high-fantasy') return result
@@ -210,7 +220,11 @@ export function library(mounts: Mounts, universe: Universe, type: ArtType, selec
     const local = splash && !category ? { dir: splashDir, assets: rows(doc(join(splashDir, 'manifest.json')).assets) } : approved
     const addLocal = (look: Row, dir: string) => add(look, { mount: 'work', dir },
       look.ownerApproved === true || row(look.approval).status === 'approved' ? 'Approved' : 'In progress')
-    if (characterArt || category) {
+    if (universe.slug === 'high-fantasy' && splash && !category) {
+      const section = study({ ...entry, folder: join(entry.folder, 'splash-art') })
+      for (const look of rows(section.manifest.assets)) addLocal(look, section.dir)
+    }
+    if (characterArt || category || universe.slug === 'high-fantasy') {
       const own = splash && !category ? join(active.dir, 'splash-art') : active.dir
       const records = splash ? rows(doc(join(own, 'manifest.json')).assets) : rows(active.manifest.fullBodyAssets)
       for (const look of records) addLocal(look, own)
@@ -265,6 +279,10 @@ export function library(mounts: Mounts, universe: Universe, type: ArtType, selec
           ? [{ label: title(mood), image: composed, face, at: position }] : []
       })
       sets.set(label, { label: title(label), base, states: [{ label: 'Neutral', image: base }, ...states] })
+    }
+    if (universe.slug === 'high-fantasy') {
+      const section = study({ ...entry, folder: join(entry.folder, 'dialogue-portraits') })
+      for (const record of rows(section.manifest.assets)) add(section.dir, record, section.manifest)
     }
     for (const record of rows(active.manifest.assets)) add(active.dir, record, active.manifest)
     for (const record of rows(shared.assets).filter((asset) => match(asset, entry))) add(sharedDir, record, shared)

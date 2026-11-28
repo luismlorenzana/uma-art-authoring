@@ -1,4 +1,5 @@
-import { artTypes, artTypePresentation, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work, type Portrait } from './gallery-data.js'
+import { join } from 'node:path'
+import { artTypes, artTypePresentation, albumInputReferences, categories, entries, library, universes, type ArtType, type Entry, type Mounts, type Universe, type Work, type Portrait } from './gallery-data.js'
 import { artCategories, categoriesFor, isArtCategory, supportsCategory, type ArtCategory } from './art-categories.js'
 import { FACINGS, spriteAlbum } from './combat-sprites.js'
 import { duoLibrary } from './gallery-duos.js'
@@ -236,7 +237,7 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
   const lib = library(mounts, u, type)
   const label = artTypePresentation(u, type).label
   const extra = isArtCategory(tab) ? tab : undefined
-  const sections: Readonly<Record<string, string>> = type === 'characters' || u.slug === 'cyberpunk'
+  const sections: Readonly<Record<string, string>> = type === 'characters' || u.slug === 'cyberpunk' || u.slug === 'high-fantasy'
     ? { ...tabs, ...Object.fromEntries(Object.entries(categoriesFor(u.slug)).filter(([key]) => key !== 'duo-splash' || type === 'characters').map(([key, value]) => [key, value.label])) }
     : tabs
   const base = urlFor(u, type, entry.id)
@@ -259,6 +260,12 @@ function memberPage(mounts: Mounts, u: Universe, type: ArtType, entry: Entry, ta
     panel = files.length ? panel + reference : baseline
       ? `<figure class="work single"><a class="work-image" href="${html(baseline)}" target="_blank" rel="noopener">${cover(baseline, entry.name + ' baseline')}</a><figcaption><strong>Full-body baseline</strong></figcaption></figure>`
       : '<p class="empty">No character art yet.</p>'
+  }
+  if (u.slug === 'high-fantasy' && tab !== 'art') {
+    const folder = tab === 'character-sprites' ? subject.folder : join(entry.folder, tab === 'expressions' ? 'dialogue-portraits' : 'splash-art')
+    const references = albumInputReferences(mounts, folder)
+    panel = (references.length ? `<p class="authoring-reference">Approved Quest base: ${references.map(ref => `<a href="${html(ref.url)}" target="_blank" rel="noopener">${html(ref.label)}</a>`).join(' · ')}</p>`
+      : '<p class="authoring-reference">An approved Quest base is needed before authoring this section.</p>') + panel
   }
   const context = [entry.tier, pairing(entry, type, u)].filter(Boolean).join(' · ')
   return frame(entry.name, [{ label: u.title, href: urlFor(u) }, { label, href: urlFor(u, type) }, { label: entry.name }],
@@ -284,7 +291,7 @@ export function galleryPage(mounts: Mounts, pathname: string, search: URLSearchP
   const character = roster.find((item) => item.id === id)
   if (!character) return null
   const view = search.get('view')
-  const categoryView = (type === 'characters' || universe.slug === 'cyberpunk') && isArtCategory(view) && (view !== 'duo-splash' || type === 'characters') && supportsCategory(universe.slug, view) ? view : undefined
+  const categoryView = (type === 'characters' || universe.slug === 'cyberpunk' || universe.slug === 'high-fantasy') && isArtCategory(view) && (view !== 'duo-splash' || type === 'characters') && supportsCategory(universe.slug, view) ? view : undefined
   const tab = categoryView ?? (view === 'expressions' || view === 'splash' ? view : 'art')
   return memberPage(mounts, universe, type, character, tab)
 }

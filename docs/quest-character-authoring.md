@@ -16,6 +16,11 @@ pnpm quest:cast
 pnpm quest:cast --check
 ```
 
+Once the cast exists, run `pnpm quest:albums` to prepare the separate Facial Expressions, Splash Art and Character
+Sprites workspaces across Umas, Humans and Elves. Read the [album workflow](quest-art-albums.md). Their generated
+inputs use approved Quest outfits as they become available; they do not treat the Cyberpunk starting references as
+approved Quest designs.
+
 `UMA_ART_CONTENT` or `UNIVERSES_DIR` select the existing ignored Art content; `UMA_PLATFORM_ROOT` or
 `UMA_CONTENT_DIR` select the local Platform Ranker mirror. `--source` can select another normal source universe
 with the same approved pilot/base and cast contracts. The default is Cyberpunk.
