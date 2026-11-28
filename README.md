@@ -7,6 +7,10 @@ over its current Human/Elf groups from the source cast. `pnpm quest:cast` prepar
 and reciprocal relationship links. Approved pilot/base images are referenced in place; no image is copied or
 approved as Quest art. Use `--dry-run` to preview preparation and `--check` to validate it without writing.
 
+`pnpm quest:albums` prepares Facial Expressions, Splash Art and Character Sprites inside all three species' albums.
+It pins approved Quest outfit references, leaves unauthored actors pending, and preserves authored files and approvals.
+Read the [Quest album workflow](docs/quest-art-albums.md); add `--check` to validate without writing.
+
 ## Owner-private base and splash alternatives
 
 The [private-variant workflow](docs/private-art-variants.md) preserves existing image IDs. Agents must follow the

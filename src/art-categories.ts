@@ -14,11 +14,16 @@ export const cyberpunkCategories = {
   'combat-sprites': { label: 'Combat Sprites', kind: 'look' },
 } as const
 
+export const questCategories = {
+  'character-sprites': { label: 'Character Sprites', kind: 'look' },
+} as const
+
 export const artCategories = { ...farmCategories, ...cyberpunkCategories }
 export type ArtCategory = keyof typeof artCategories
 export function categoriesFor(universe: string): Partial<typeof artCategories> {
   if (universe === 'farm-life') return farmCategories
   if (universe === 'cyberpunk') return cyberpunkCategories
+  if (universe === 'high-fantasy') return questCategories
   return {}
 }
 export function supportsCategory(universe: string, category: ArtCategory) {
